@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+*.pyc
+*.sqlite3
+data
+frontend/node_modules
+frontend/dist
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+templates/rendered

@@ -1,0 +1,37 @@
+:root { font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #25201d; background: #f7f6f3; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 1080px; }
+.center { min-height: 100vh; display: grid; place-items: center; }
+.app-shell { min-height: 100vh; }
+.sidebar { position: sticky !important; top: 0; height: 100vh; border-right: 1px solid #ebe7e3; }
+.brand { height: 72px; padding: 0 24px; display: flex; align-items: center; gap: 12px; color: #9f1c15; font-size: 19px; font-weight: 700; }
+.brand .anticon { font-size: 28px; }
+.user-panel { position: absolute; left: 18px; right: 18px; bottom: 18px; padding: 14px; border-top: 1px solid #eee8e3; display: flex; flex-direction: column; gap: 3px; }
+.user-panel .ant-btn { margin-top: 8px; text-align: left; }
+.topbar { height: 48px; line-height: 48px; padding: 0 28px; background: #fff9f0; color: #7a4b13; border-bottom: 1px solid #f0e2cc; font-size: 13px; }
+.content { padding: 28px; }
+.page { max-width: 1500px; margin: 0 auto; }
+.page-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.page-heading h2 { margin: 0 0 5px !important; }
+.login-page { min-height: 100vh; display: grid; place-items: center; background: radial-gradient(circle at top, #f9e7e2, #f7f6f3 50%); }
+.login-card { width: 410px; text-align: center; box-shadow: 0 18px 60px rgba(62, 30, 20, .12); }
+.login-card form { text-align: left; margin-top: 26px; }
+.login-mark { font-size: 52px; color: #b42318; }
+.workspace-tabs { margin-top: 20px; }
+.workspace-tabs > .ant-tabs-nav { background: white; padding: 0 20px; border-radius: 8px; }
+.evidence-video { width: 100%; max-height: 430px; background: #151515; border-radius: 6px; margin-bottom: 16px; }
+.clickable-list { cursor: pointer; border-radius: 6px; padding-inline: 8px !important; }
+.clickable-list:hover { background: #faf4f1; }
+.spaced-list { margin-top: 14px; }
+.spaced-list .ant-list-item { padding-block: 18px; }
+.muted { color: #8a817c; font-size: 12px; }
+.error-text { color: #b42318; font-size: 12px; max-width: 360px; }
+.tip-card { margin-top: 20px; }
+.full-width { width: 100%; }
+.draft-list { display: flex; flex-direction: column; gap: 18px; margin-top: 16px; }
+.document-field { padding: 14px; margin-bottom: 12px; background: #fafafa; border: 1px solid #eee; border-radius: 7px; }
+.stale-field { background: #fff1f0; border-color: #ffa39e; }
+.field-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.field-config-card { margin-bottom: 12px; }
+.field-config-card .ant-card-body { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1.8fr; gap: 12px; padding-bottom: 4px; }
+@media (max-width: 1100px) { body { min-width: 0; } .sidebar { width: 200px !important; min-width: 200px !important; } .content { padding: 18px; } }
