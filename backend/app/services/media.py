@@ -95,13 +95,18 @@ def _persist_fact_candidates(
     db: Session,
     asset: Asset,
     evidence: list[Evidence],
-    extracted: dict[str, Any] | None,
+    extracted: dict[str, Any] | list[Any] | None,
 ) -> int:
     if not extracted:
         return 0
+    candidates = extracted if isinstance(extracted, list) else extracted.get("facts", [])
+    if not isinstance(candidates, list):
+        return 0
     evidence_ids = {item.id for item in evidence}
     count = 0
-    for candidate in extracted.get("facts", []):
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
         source_ids = [item for item in candidate.get("evidence_ids", []) if item in evidence_ids]
         summary = str(candidate.get("summary", "")).strip()
         if not source_ids or not summary:
@@ -240,7 +245,9 @@ def process_asset(db: Session, asset_id: str) -> str:
             extracted = ai_provider.chat_json(
                 system=(
                     "你是消防检查材料整理助手。只整理输入证据中明确存在的事实，不作最终执法判断。"
-                    "返回 JSON：facts 数组；每项含 kind、summary、content、confidence、evidence_ids。"
+                    "必须返回顶层 JSON 对象，不得直接返回数组。严格格式为："
+                    '{"facts":[{"kind":"...","summary":"...","content":{},'
+                    '"confidence":0.0,"evidence_ids":["..."]}]}。'
                     "evidence_ids 必须至少包含一个输入 ID。"
                 ),
                 user=analysis_input,

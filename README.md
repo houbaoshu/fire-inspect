@@ -60,7 +60,7 @@ docker compose -f deploy/docker-compose.yml up --build
 
 - 设置强随机 `BOOTSTRAP_ADMIN_PASSWORD` 和 `S3_SECRET_KEY`；启用 HTTPS 后设置 `SESSION_COOKIE_SECURE=true`。
 - 正式视频和业务文档不得发送到未经授权的第三方。AI 配置应指向获准的内网或外部 OpenAI-compatible 服务。
-- `AI_BASE_URL` 填写到 API 版本根路径，例如 `https://approved.example/v1`；分别设置聊天、转写和向量模型。
+- `AI_CHAT_BASE_URL`、`AI_TRANSCRIPTION_BASE_URL`、`AI_EMBEDDING_BASE_URL` 可分别指向聊天、转写和向量服务的 API 版本根路径；未设置时回退到兼容配置 `AI_BASE_URL`。
 - 当前数据库向量列固定为 384 维，`AI_EMBEDDING_DIMENSIONS` 与向量模型输出必须设为 `384`。
 - 正式投用前，用有权来源法规替换演示参考材料，并接入单位的正式 Word 模板。
 

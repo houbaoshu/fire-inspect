@@ -40,7 +40,20 @@ def seed_data() -> None:
             if not path.exists():
                 continue
             key = f"templates/builtin/{filename}"
-            if db.scalar(select(DocumentTemplate).where(DocumentTemplate.storage_key == key)):
+            existing_template = db.scalar(
+                select(DocumentTemplate).where(DocumentTemplate.storage_key == key)
+            )
+            if existing_template:
+                if document_type == "photo_record":
+                    fields = [dict(item) for item in existing_template.fields_json]
+                    changed = False
+                    for field in fields:
+                        if field.get("code") == "photo" and field.get("type") == "image":
+                            field["type"] = "photo_list"
+                            field["description"] = "选择一张或多张证据照片或关键帧"
+                            changed = True
+                    if changed:
+                        existing_template.fields_json = fields
                 continue
             content = path.read_bytes()
             get_storage().put_bytes(

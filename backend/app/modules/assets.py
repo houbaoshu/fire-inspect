@@ -2,14 +2,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import accessible_inspection, get_current_user, model_dict
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.storage import LocalStorage, get_storage
-from app.models import Asset, Evidence, User, new_id
+from app.models import Asset, DocumentDraft, Evidence, FactEvidence, Job, User, new_id
 from app.services.audit import audit
 from app.services.jobs import create_job
 
@@ -137,6 +137,53 @@ def retry_asset(
     return {"job_id": job.id}
 
 
+@router.delete("/assets/{asset_id}", status_code=204)
+def delete_asset(
+    asset_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    asset = db.get(Asset, asset_id)
+    if not asset:
+        raise HTTPException(404, "材料不存在")
+    accessible_inspection(db, user, asset.inspection_id)
+    if asset.processing_status in {"pending", "processing"}:
+        raise HTTPException(409, "材料正在处理中，请等待处理结束后再删除")
+
+    evidence = db.scalars(select(Evidence).where(Evidence.asset_id == asset.id)).all()
+    evidence_ids = {item.id for item in evidence}
+    if evidence_ids and db.scalar(
+        select(FactEvidence).where(FactEvidence.evidence_id.in_(evidence_ids)).limit(1)
+    ):
+        raise HTTPException(409, "材料证据已被检查事实引用，不能删除")
+    for draft in db.scalars(
+        select(DocumentDraft).where(DocumentDraft.inspection_id == asset.inspection_id)
+    ).all():
+        if any(
+            evidence_ids.intersection(state.get("evidence_ids", []))
+            for state in draft.fields_json.values()
+            if isinstance(state, dict)
+        ):
+            raise HTTPException(409, "材料证据已被文书引用，不能删除")
+
+    storage = get_storage()
+    for key in [*(item.storage_key for item in evidence if item.storage_key), asset.storage_key]:
+        storage.delete(key)
+    if evidence_ids:
+        db.execute(delete(FactEvidence).where(FactEvidence.evidence_id.in_(evidence_ids)))
+        db.execute(delete(Evidence).where(Evidence.id.in_(evidence_ids)))
+    db.execute(delete(Job).where(Job.target_type == "asset", Job.target_id == asset.id))
+    audit(
+        db,
+        actor_id=user.id,
+        action="asset.deleted",
+        target_type="asset",
+        target_id=asset.id,
+        inspection_id=asset.inspection_id,
+        details={"filename": asset.filename, "processing_status": asset.processing_status},
+    )
+    db.delete(asset)
+    db.commit()
+
+
 @router.get("/assets/{asset_id}/content")
 def asset_content(
     asset_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
@@ -150,9 +197,8 @@ def asset_content(
         return FileResponse(
             storage.local_path(asset.storage_key),
             media_type=asset.content_type,
-            filename=asset.filename,
         )
-    return RedirectResponse(storage.presigned_url(asset.storage_key, asset.filename))
+    return RedirectResponse(storage.presigned_url(asset.storage_key))
 
 
 @router.get("/inspections/{inspection_id}/evidence")

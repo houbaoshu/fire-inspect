@@ -65,6 +65,20 @@ def list_templates(user: User = Depends(get_current_user), db: Session = Depends
     return [serialize_template(item) for item in templates]
 
 
+@router.get("/templates/{template_id}/content")
+def template_content(
+    template_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    template = db.get(DocumentTemplate, template_id)
+    if not template or (template.owner_id and template.owner_id != user.id):
+        raise HTTPException(404, "模板不存在")
+    storage = get_storage()
+    filename = f"{template.document_type}-template.docx"
+    if isinstance(storage, LocalStorage):
+        return FileResponse(storage.local_path(template.storage_key), filename=filename)
+    return RedirectResponse(storage.presigned_url(template.storage_key, filename))
+
+
 @router.post("/templates", status_code=201)
 def upload_template(
     name: str = Form(...),
@@ -91,7 +105,12 @@ def upload_template(
     except (ValueError, OSError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
         raise HTTPException(422, f"模板格式无效：{exc}") from exc
     if not codes:
-        raise HTTPException(422, "模板中没有找到 {{ field_code }} 占位符")
+        raise HTTPException(
+            422,
+            "未检测到有效占位符。{{ field_code }} 表示格式示例，不是固定名称；"
+            "请在 Word 中输入如 {{ organization }}，使用英文半角花括号，"
+            "名称只能包含字母、数字和下划线。",
+        )
     manifest_codes = {item.get("code") for item in manifest}
     if manifest_codes != set(codes) or len(manifest_codes) != len(manifest):
         raise HTTPException(422, "字段清单必须与模板占位符完全一致")

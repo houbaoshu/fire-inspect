@@ -237,11 +237,63 @@ def test_short_video_upload_extracts_traceable_evidence_without_inventing_facts(
     assert response.json()["asset"]["processing_status"] == "completed", response.json()[
         "asset"
     ].get("processing_error")
+    asset_id = response.json()["asset"]["id"]
+    preview = client.get(f"/api/assets/{asset_id}/content", headers={"Range": "bytes=0-99"})
+    assert preview.status_code == 206
+    assert len(preview.content) == 100
     assets = client.get(f"/api/inspections/{inspection['id']}/assets").json()
     assert "未生成候选事实" in assets[0]["metadata_json"]["warning"]
     evidence = client.get(f"/api/inspections/{inspection['id']}/evidence").json()
     assert any(item["kind"] == "keyframe" and item["start_ms"] == 0 for item in evidence)
     assert client.get(f"/api/inspections/{inspection['id']}/facts").json() == []
+
+
+def test_unreferenced_asset_can_be_deleted_with_derived_evidence(client):
+    login(client)
+    inspection = create_inspection(client)
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z2S8AAAAASUVORK5CYII="
+    )
+    uploaded = client.post(
+        f"/api/inspections/{inspection['id']}/assets",
+        files={"file": ("delete-me.png", png, "image/png")},
+    ).json()["asset"]
+    evidence = client.get(f"/api/inspections/{inspection['id']}/evidence").json()
+    assert len(evidence) == 1
+
+    response = client.delete(f"/api/assets/{uploaded['id']}")
+
+    assert response.status_code == 204, response.text
+    assert client.get(f"/api/inspections/{inspection['id']}/assets").json() == []
+    assert client.get(f"/api/inspections/{inspection['id']}/evidence").json() == []
+    assert client.get(f"/api/evidence/{evidence[0]['id']}/content").status_code == 404
+
+
+def test_asset_referenced_by_fact_cannot_be_deleted(client):
+    login(client)
+    inspection = create_inspection(client)
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z2S8AAAAASUVORK5CYII="
+    )
+    asset = client.post(
+        f"/api/inspections/{inspection['id']}/assets",
+        files={"file": ("referenced.png", png, "image/png")},
+    ).json()["asset"]
+    evidence = client.get(f"/api/inspections/{inspection['id']}/evidence").json()[0]
+    client.post(
+        f"/api/inspections/{inspection['id']}/facts",
+        json={
+            "kind": "observation",
+            "summary": "引用照片的事实",
+            "content": {},
+            "evidence_ids": [evidence["id"]],
+        },
+    )
+
+    response = client.delete(f"/api/assets/{asset['id']}")
+
+    assert response.status_code == 409
+    assert "检查事实引用" in response.text
 
 
 def test_photo_and_inquiry_documents_export_from_shared_facts(client):
@@ -283,7 +335,7 @@ def test_photo_and_inquiry_documents_export_from_shared_facts(client):
         if document_type == "photo_record":
             client.patch(
                 f"/api/documents/{draft['id']}/fields/photo",
-                json={"value": photo["id"]},
+                json={"value": [photo["id"]]},
             )
         else:
             assert qa_text in draft["fields_json"]["questions_answers"]["value"]
@@ -348,6 +400,30 @@ def test_uploaded_template_fields_can_be_configured_without_changing_codes(clien
         },
     )
     assert response.status_code == 422
+
+
+def test_template_without_placeholders_has_actionable_error(client):
+    login(client)
+    document = Document()
+    document.add_paragraph("没有模板字段")
+    output = io.BytesIO()
+    document.save(output)
+
+    response = client.post(
+        "/api/templates",
+        data={"name": "无字段模板", "document_type": "inspection_record"},
+        files={
+            "file": (
+                "empty.docx",
+                output.getvalue(),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+    )
+
+    assert response.status_code == 422
+    assert "不是固定名称" in response.text
+    assert "{{ organization }}" in response.text
 
 
 def test_photo_list_field_exports_multiple_images(client):

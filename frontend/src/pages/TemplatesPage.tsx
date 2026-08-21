@@ -1,6 +1,6 @@
-import { CloudUploadOutlined, SettingOutlined } from '@ant-design/icons'
+import { CloudUploadOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Card, Form, Input, Modal, Select, Table, Tag, Typography, Upload } from 'antd'
+import { Alert, App, Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography, Upload } from 'antd'
 import { useState } from 'react'
 import { api, type Template } from '../api'
 
@@ -16,16 +16,17 @@ export default function TemplatesPage() {
   const queryClient = useQueryClient()
   const templates = useQuery({ queryKey: ['templates'], queryFn: () => api<Template[]>('/templates') })
   return <div className="page">
-    <div className="page-heading"><div><Typography.Title level={2}>文书模板</Typography.Title><Typography.Text type="secondary">模板负责格式，AI 只填写明确的 {'{{ field_code }}'} 占位符</Typography.Text></div><Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setOpen(true)}>上传模板</Button></div>
+    <div className="page-heading"><div><Typography.Title level={2}>文书模板</Typography.Title><Typography.Text type="secondary">模板负责格式，AI 只填写 Word 中明确声明的字段占位符</Typography.Text></div><Button type="primary" icon={<CloudUploadOutlined />} onClick={() => setOpen(true)}>上传模板</Button></div>
     <Card><Table rowKey="id" dataSource={templates.data} loading={templates.isLoading} pagination={false} columns={[
       { title: '模板名称', dataIndex: 'name' },
       { title: '文书类型', dataIndex: 'document_type', render: value => labels[value] ?? value },
       { title: '来源', dataIndex: 'builtin', render: value => <Tag color={value ? 'red' : 'blue'}>{value ? '系统样例' : '我的模板'}</Tag> },
       { title: '字段', dataIndex: 'fields_json', render: fields => fields.map((field: Template['fields_json'][number]) => <Tag key={field.code}>{field.label}</Tag>) },
-      { title: '操作', render: (_, row) => !row.builtin && <Button icon={<SettingOutlined />} onClick={() => { setEditing(row); fieldForm.setFieldsValue({ fields: row.fields_json }); }}>配置字段</Button> },
+      { title: '操作', render: (_, row) => <Space><Button icon={<DownloadOutlined />} href={`/api/templates/${row.id}/content`}>下载样例</Button>{!row.builtin && <Button icon={<SettingOutlined />} onClick={() => { setEditing(row); fieldForm.setFieldsValue({ fields: row.fields_json }); }}>配置字段</Button>}</Space> },
     ]} /></Card>
-    <Card className="tip-card" title="模板准备规则"><Typography.Paragraph>在 DOCX 的普通文本或表格单元格中加入占位符，例如 <Typography.Text code>{'{{ organization }}'}</Typography.Text>。一个占位符请保持在同一个 Word 文本样式片段中，系统上传时会校验所有字段。</Typography.Paragraph></Card>
+    <Card className="tip-card" title="模板准备规则"><Alert type="info" showIcon message={<span><Typography.Text code>{'{{ field_code }}'}</Typography.Text> 表示占位符格式，不是必须使用的固定名称。</span>} /><Typography.Paragraph className="template-help">请在 DOCX 正文或表格单元格中直接输入占位符，例如 <Typography.Text code>{'{{ organization }}'}</Typography.Text>、<Typography.Text code>{'{{ facts }}'}</Typography.Text> 或 <Typography.Text code>{'{{ photos }}'}</Typography.Text>。必须使用英文半角花括号，字段名称只能包含字母、数字和下划线。可先下载上方系统样例进行修改。</Typography.Paragraph></Card>
     <Modal title="上传 Word 模板" open={open} onCancel={() => setOpen(false)} onOk={() => form.submit()} destroyOnHidden>
+      <Alert className="template-upload-alert" type="info" showIcon message="请先在 Word 中加入有效占位符" description={<span>例如 <Typography.Text code>{'{{ organization }}'}</Typography.Text>；<Typography.Text code>{'{{ field_code }}'}</Typography.Text> 只是格式说明。</span>} />
       <Form form={form} layout="vertical" initialValues={{ document_type: 'inspection_record' }} onFinish={async values => {
         if (!file) return message.warning('请选择 DOCX 文件')
         const data = new FormData(); data.append('name', values.name); data.append('document_type', values.document_type); data.append('file', file)

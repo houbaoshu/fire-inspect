@@ -26,20 +26,25 @@ class AIProvider:
     def __init__(self):
         self.settings = get_settings()
 
-    def _url(self, path: str) -> str:
-        return f"{self.settings.ai_base_url.rstrip('/')}{path}"
+    @staticmethod
+    def _url(base_url: str, path: str) -> str:
+        return f"{base_url.rstrip('/')}{path}"
 
     def embeddings(self, texts: list[str]) -> list[list[float]]:
         if not (
-            self.settings.ai_base_url
+            self.settings.embedding_base_url
             and self.settings.ai_api_key
             and self.settings.ai_embedding_model
         ):
             return [local_embedding(text, self.settings.ai_embedding_dimensions) for text in texts]
         response = httpx.post(
-            self._url("/embeddings"),
+            self._url(self.settings.embedding_base_url, "/embeddings"),
             headers={"Authorization": f"Bearer {self.settings.ai_api_key}"},
-            json={"model": self.settings.ai_embedding_model, "input": texts},
+            json={
+                "model": self.settings.ai_embedding_model,
+                "input": texts,
+                "dimensions": self.settings.ai_embedding_dimensions,
+            },
             timeout=60,
         )
         response.raise_for_status()
@@ -52,7 +57,7 @@ class AIProvider:
         if not self.settings.ai_enabled:
             return None
         response = httpx.post(
-            self._url("/chat/completions"),
+            self._url(self.settings.chat_base_url, "/chat/completions"),
             headers={"Authorization": f"Bearer {self.settings.ai_api_key}"},
             json={
                 "model": self.settings.ai_chat_model,
@@ -71,14 +76,14 @@ class AIProvider:
 
     def transcribe(self, audio_path: Path) -> list[dict[str, Any]]:
         if not (
-            self.settings.ai_base_url
+            self.settings.transcription_base_url
             and self.settings.ai_api_key
             and self.settings.ai_transcription_model
         ):
             return []
         with audio_path.open("rb") as audio:
             response = httpx.post(
-                self._url("/audio/transcriptions"),
+                self._url(self.settings.transcription_base_url, "/audio/transcriptions"),
                 headers={"Authorization": f"Bearer {self.settings.ai_api_key}"},
                 files={"file": (audio_path.name, audio, "audio/wav")},
                 data={

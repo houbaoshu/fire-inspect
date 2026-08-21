@@ -20,13 +20,18 @@ body { margin: 0; min-width: 1080px; }
 .workspace-tabs { margin-top: 20px; }
 .workspace-tabs > .ant-tabs-nav { background: white; padding: 0 20px; border-radius: 8px; }
 .evidence-video { width: 100%; max-height: 430px; background: #151515; border-radius: 6px; margin-bottom: 16px; }
+.video-selector { margin-bottom: 10px; }
 .clickable-list { cursor: pointer; border-radius: 6px; padding-inline: 8px !important; }
 .clickable-list:hover { background: #faf4f1; }
 .spaced-list { margin-top: 14px; }
 .spaced-list .ant-list-item { padding-block: 18px; }
+.fact-evidence-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.evidence-reference { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #eee8e3; border-radius: 7px; background: #fff; }
 .muted { color: #8a817c; font-size: 12px; }
 .error-text { color: #b42318; font-size: 12px; max-width: 360px; }
 .tip-card { margin-top: 20px; }
+.template-help { margin-top: 14px; margin-bottom: 0 !important; }
+.template-upload-alert { margin-bottom: 16px; }
 .full-width { width: 100%; }
 .draft-list { display: flex; flex-direction: column; gap: 18px; margin-top: 16px; }
 .document-field { padding: 14px; margin-bottom: 12px; background: #fafafa; border: 1px solid #eee; border-radius: 7px; }
@@ -34,4 +39,9 @@ body { margin: 0; min-width: 1080px; }
 .field-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .field-config-card { margin-bottom: 12px; }
 .field-config-card .ant-card-body { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1.8fr; gap: 12px; padding-bottom: 4px; }
+.evidence-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.evidence-option { padding: 8px; border: 1px solid #e5e1dd; border-radius: 8px; background: #fff; transition: border-color .2s, box-shadow .2s; }
+.evidence-option.selected { border-color: #b42318; box-shadow: 0 0 0 2px rgba(180, 35, 24, .1); }
+.evidence-option-image { object-fit: cover; border-radius: 5px; }
+.evidence-option-label { display: flex; align-items: center; gap: 7px; margin-top: 7px; cursor: pointer; }
 @media (max-width: 1100px) { body { min-width: 0; } .sidebar { width: 200px !important; min-width: 200px !important; } .content { padding: 18px; } }

@@ -43,14 +43,14 @@ class InlineImageList:
 
 def scan_template_fields(data: bytes) -> list[str]:
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        xml = "".join(
+        xml = "\n".join(
             archive.read(name).decode("utf-8", errors="ignore")
             for name in archive.namelist()
             if name.startswith("word/") and name.endswith(".xml")
         )
     plain = re.sub(r"<[^>]+>", "", xml)
     if any(token in plain for token in ("{%", "%}", "{#", "#}")):
-        raise ValueError("模板只允许 {{ field_code }} 占位符，不允许控制语句或注释")
+        raise ValueError("模板只允许 {{ organization }} 这类字段占位符，不允许控制语句或注释")
     expressions = JINJA_EXPRESSION_PATTERN.findall(plain)
     if any(not FIELD_CODE_PATTERN.fullmatch(expression.strip()) for expression in expressions):
         raise ValueError("模板占位符只能使用字母、数字和下划线")
@@ -77,7 +77,7 @@ def default_field_manifest(codes: list[str]) -> list[dict[str, Any]]:
         {
             "code": code,
             "label": labels.get(code, code.replace("_", " ").title()),
-            "type": "image"
+            "type": "photo_list"
             if code == "photo"
             else "multiline"
             if code in {"facts", "legal_basis", "questions_answers"}

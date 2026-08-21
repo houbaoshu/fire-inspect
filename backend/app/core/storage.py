@@ -21,6 +21,9 @@ class Storage:
     def read_bytes(self, key: str) -> bytes:
         raise NotImplementedError
 
+    def delete(self, key: str) -> None:
+        raise NotImplementedError
+
     def presigned_url(self, key: str, download_name: str | None = None) -> str | None:
         return None
 
@@ -58,6 +61,9 @@ class LocalStorage(Storage):
     def local_path(self, key: str) -> Path:
         return self._path(key)
 
+    def delete(self, key: str) -> None:
+        self._path(key).unlink(missing_ok=True)
+
 
 class S3Storage(Storage):
     def __init__(self):
@@ -81,6 +87,9 @@ class S3Storage(Storage):
 
     def read_bytes(self, key: str) -> bytes:
         return self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
+
+    def delete(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=key)
 
     def presigned_url(self, key: str, download_name: str | None = None) -> str:
         params = {"Bucket": self.bucket, "Key": key}
