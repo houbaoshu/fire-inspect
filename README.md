@@ -7,7 +7,7 @@
 1. 使用服务端会话登录，管理员创建检查人员账户。
 2. 创建一次检查，填写或稍后补充单位、地址、时间和检查人员。
 3. 上传视频、音频、照片或 TXT 说明；后台使用 FFmpeg 提取带时间点的转写与关键帧。
-4. AI 只可提交带有效证据 ID 的候选事实；用户可修改、确认、排除或人工补充事实。
+4. AI 将 transcript 整理为可核对的询问问答候选，并生成其他带有效证据 ID 的候选事实；用户可修改、确认、排除或人工补充。
 5. 管理员上传 PDF、DOCX、TXT 知识文档；系统进行混合检索，回答保留原文、定位和来源文件。
 6. 使用预置或用户上传的 DOCX 模板生成消防监督检查记录、照片类文书、询问笔录。
 7. 在浏览器中编辑结构化字段。事实或基础信息变化时只标记相关字段，不覆盖人工内容。
@@ -61,6 +61,8 @@ docker compose -f deploy/docker-compose.yml up --build
 - 设置强随机 `BOOTSTRAP_ADMIN_PASSWORD` 和 `S3_SECRET_KEY`；启用 HTTPS 后设置 `SESSION_COOKIE_SECURE=true`。
 - 正式视频和业务文档不得发送到未经授权的第三方。AI 配置应指向获准的内网或外部 OpenAI-compatible 服务。
 - `AI_CHAT_BASE_URL`、`AI_TRANSCRIPTION_BASE_URL`、`AI_EMBEDDING_BASE_URL` 可分别指向聊天、转写和向量服务的 API 版本根路径；未设置时回退到兼容配置 `AI_BASE_URL`。
+- 阿里云语音识别支持 `qwen-audio-3.0-asr-flash`（业务空间 `/api/v1` 地址）和 `qwen3-asr-flash`（业务空间 `/compatible-mode/v1` 地址）；系统会根据模型选择原生 ASR 或兼容聊天接口。`qwen3-asr-flash-filetrans` 是异步文件接口，当前不支持。
+- 新处理的音视频会自动从转写中提取问答候选；已处理材料可在“材料与证据”中点击“提取问答”补做。问答必须人工确认，确认后会自动刷新未人工编辑的询问笔录字段。
 - 当前数据库向量列固定为 384 维，`AI_EMBEDDING_DIMENSIONS` 与向量模型输出必须设为 `384`。
 - 正式投用前，用有权来源法规替换演示参考材料，并接入单位的正式 Word 模板。
 

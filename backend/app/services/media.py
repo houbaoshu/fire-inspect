@@ -6,12 +6,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.storage import get_storage
 from app.models import Asset, Evidence, Fact, FactEvidence
 from app.services.ai import ai_provider
+
+GENERAL_FACT_KINDS = {"observation", "basic_info", "issue", "statement"}
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -111,9 +114,10 @@ def _persist_fact_candidates(
         summary = str(candidate.get("summary", "")).strip()
         if not source_ids or not summary:
             continue
+        kind = str(candidate.get("kind") or "observation")
         fact = Fact(
             inspection_id=asset.inspection_id,
-            kind=str(candidate.get("kind") or "observation"),
+            kind=kind if kind in GENERAL_FACT_KINDS else "observation",
             summary=summary,
             content=candidate.get("content") if isinstance(candidate.get("content"), dict) else {},
             status="candidate",
@@ -127,6 +131,116 @@ def _persist_fact_candidates(
         for evidence_id in source_ids:
             db.add(FactEvidence(fact_id=fact.id, evidence_id=evidence_id))
         count += 1
+    return count
+
+
+def _persist_qa_candidates(
+    db: Session,
+    asset: Asset,
+    transcript_evidence: list[Evidence],
+    extracted: dict[str, Any] | None,
+) -> int:
+    if not extracted or not isinstance(extracted.get("qas"), list):
+        return 0
+    transcript_ids = {item.id for item in transcript_evidence}
+    existing_summaries = set(
+        db.scalars(
+            select(Fact.summary)
+            .join(FactEvidence, FactEvidence.fact_id == Fact.id)
+            .join(Evidence, Evidence.id == FactEvidence.evidence_id)
+            .where(
+                Fact.inspection_id == asset.inspection_id,
+                Fact.kind == "qa",
+                Evidence.asset_id == asset.id,
+            )
+        ).all()
+    )
+    count = 0
+    for candidate in extracted["qas"]:
+        if not isinstance(candidate, dict):
+            continue
+        question = str(candidate.get("question") or "").strip()
+        answer = str(candidate.get("answer") or "").strip()
+        source_ids = [
+            item for item in candidate.get("evidence_ids", []) if item in transcript_ids
+        ]
+        if not question or not answer or not source_ids:
+            continue
+        summary = f"问：{question}\n答：{answer}"
+        if summary in existing_summaries:
+            continue
+        fact = Fact(
+            inspection_id=asset.inspection_id,
+            kind="qa",
+            summary=summary,
+            content={
+                "question": question,
+                "answer": answer,
+                "speaker_attribution_confirmed": False,
+            },
+            status="candidate",
+            source="ai",
+            confidence=float(candidate["confidence"])
+            if candidate.get("confidence") is not None
+            else None,
+        )
+        db.add(fact)
+        db.flush()
+        for evidence_id in dict.fromkeys(source_ids):
+            db.add(FactEvidence(fact_id=fact.id, evidence_id=evidence_id))
+        existing_summaries.add(summary)
+        count += 1
+    return count
+
+
+def extract_qa_candidates(
+    db: Session, asset: Asset, transcript_evidence: list[Evidence] | None = None
+) -> int:
+    transcripts = transcript_evidence
+    if transcripts is None:
+        transcripts = db.scalars(
+            select(Evidence)
+            .where(Evidence.asset_id == asset.id, Evidence.kind == "transcript")
+            .order_by(Evidence.start_ms, Evidence.created_at)
+        ).all()
+    transcripts = [item for item in transcripts if (item.excerpt or "").strip()]
+    if not transcripts:
+        return 0
+    transcript_payload = [
+        {
+            "id": item.id,
+            "start_ms": item.start_ms,
+            "end_ms": item.end_ms,
+            "text": item.excerpt,
+        }
+        for item in transcripts
+    ]
+    extracted = ai_provider.chat_json(
+        system=(
+            "你是消防监督检查询问笔录整理助手。只从逐字转写中提取明确出现的询问和回答，"
+            "不得补写、推断身份或改变原意。无法可靠判断为问答的内容不要输出。"
+            "每组问答必须同时有 question、answer，并关联包含该内容的 transcript 证据 ID。"
+            "必须返回顶层 JSON 对象，严格格式为："
+            '{"qas":[{"question":"...","answer":"...","confidence":0.0,'
+            '"evidence_ids":["..."]}]}。'
+            "evidence_ids 只能使用输入提供的 ID。"
+        ),
+        user=f"逐字转写：{json.dumps(transcript_payload, ensure_ascii=False)}",
+    )
+    count = _persist_qa_candidates(db, asset, transcripts, extracted)
+    db.flush()
+    metadata = dict(asset.metadata_json)
+    metadata["qa_candidate_count"] = len(
+        set(
+            db.scalars(
+                select(Fact.id)
+                .join(FactEvidence, FactEvidence.fact_id == Fact.id)
+                .join(Evidence, Evidence.id == FactEvidence.evidence_id)
+                .where(Fact.kind == "qa", Evidence.asset_id == asset.id)
+            ).all()
+        )
+    )
+    asset.metadata_json = metadata
     return count
 
 
@@ -245,6 +359,8 @@ def process_asset(db: Session, asset_id: str) -> str:
             extracted = ai_provider.chat_json(
                 system=(
                     "你是消防检查材料整理助手。只整理输入证据中明确存在的事实，不作最终执法判断。"
+                    "kind 只能是 observation、basic_info、issue、statement 之一；"
+                    "不要在此处生成 qa，询问问答由独立流程整理。"
                     "必须返回顶层 JSON 对象，不得直接返回数组。严格格式为："
                     '{"facts":[{"kind":"...","summary":"...","content":{},'
                     '"confidence":0.0,"evidence_ids":["..."]}]}。'
@@ -253,14 +369,19 @@ def process_asset(db: Session, asset_id: str) -> str:
                 user=analysis_input,
             )
             count = _persist_fact_candidates(db, asset, evidence, extracted)
+            qa_count = extract_qa_candidates(
+                db, asset, [item for item in evidence if item.kind == "transcript"]
+            )
+            count += qa_count
             metadata = dict(asset.metadata_json)
             metadata["candidate_fact_count"] = count
+            metadata["qa_candidate_count"] = qa_count
             if not get_settings().ai_enabled:
                 metadata["warning"] = "未配置 AI 服务，已提取基础证据，未生成候选事实"
             asset.metadata_json = metadata
             asset.processing_status = "completed"
             db.commit()
-            return f"已生成 {len(evidence)} 条证据、{count} 条候选事实"
+            return f"已生成 {len(evidence)} 条证据、{count} 条候选事实（问答 {qa_count} 条）"
     except Exception as exc:
         db.rollback()
         asset = db.get(Asset, asset_id)

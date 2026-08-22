@@ -12,6 +12,7 @@ from app.core.storage import LocalStorage, get_storage
 from app.models import Asset, DocumentDraft, Evidence, FactEvidence, Job, User, new_id
 from app.services.audit import audit
 from app.services.jobs import create_job
+from app.services.media import extract_qa_candidates
 
 router = APIRouter(tags=["材料与证据"])
 
@@ -135,6 +136,37 @@ def retry_asset(
     db.commit()
     job = create_job(db, kind="process_asset", target_type="asset", target_id=asset.id)
     return {"job_id": job.id}
+
+
+@router.post("/assets/{asset_id}/extract-qa")
+def extract_asset_qa(
+    asset_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    asset = db.get(Asset, asset_id)
+    if not asset:
+        raise HTTPException(404, "材料不存在")
+    accessible_inspection(db, user, asset.inspection_id)
+    if asset.kind not in {"audio", "video"}:
+        raise HTTPException(422, "只有音频或视频材料可以提取问答")
+    transcripts = db.scalars(
+        select(Evidence).where(Evidence.asset_id == asset.id, Evidence.kind == "transcript")
+    ).all()
+    if not transcripts:
+        raise HTTPException(422, "该材料尚无语音转写，请先完成材料处理")
+    if not get_settings().ai_enabled:
+        raise HTTPException(422, "未配置聊天模型，无法整理询问问答")
+    count = extract_qa_candidates(db, asset, transcripts)
+    audit(
+        db,
+        actor_id=user.id,
+        action="asset.qa_extracted",
+        target_type="asset",
+        target_id=asset.id,
+        inspection_id=asset.inspection_id,
+        details={"candidate_count": count},
+    )
+    db.commit()
+    return {"candidate_count": count}
 
 
 @router.delete("/assets/{asset_id}", status_code=204)

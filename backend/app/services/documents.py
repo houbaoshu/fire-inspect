@@ -241,6 +241,54 @@ def mark_fact_dependent_documents_stale(db: Session, inspection_id: str) -> None
         )
 
 
+def refresh_unedited_questions_answers(db: Session, inspection_id: str) -> None:
+    db.flush()
+    facts = db.scalars(
+        select(Fact)
+        .where(
+            Fact.inspection_id == inspection_id,
+            Fact.status == "confirmed",
+            Fact.kind.in_(["qa", "statement"]),
+        )
+        .order_by(Fact.created_at)
+    ).all()
+    fact_ids = [item.id for item in facts]
+    evidence_ids = list(
+        dict.fromkeys(
+            db.scalars(
+                select(FactEvidence.evidence_id).where(
+                    FactEvidence.fact_id.in_(fact_ids or [""])
+                )
+            ).all()
+        )
+    )
+    value = "\n\n".join(_fact_value(fact) for fact in facts)
+    documents = db.scalars(
+        select(DocumentDraft).where(
+            DocumentDraft.inspection_id == inspection_id,
+            DocumentDraft.document_type == "inquiry_record",
+        )
+    ).all()
+    for document in documents:
+        fields = dict(document.fields_json)
+        current = fields.get("questions_answers")
+        if not isinstance(current, dict) or current.get("edited"):
+            continue
+        state = dict(current)
+        state.update(
+            value=value,
+            stale=False,
+            depends_on_facts=True,
+            fact_ids=fact_ids,
+            evidence_ids=evidence_ids,
+        )
+        fields["questions_answers"] = state
+        document.fields_json = fields
+        document.status = "draft"
+        document.confirmed_by = None
+        document.confirmed_at = None
+
+
 def render_document(db: Session, draft: DocumentDraft) -> bytes:
     template = db.get(DocumentTemplate, draft.template_id)
     if not template:

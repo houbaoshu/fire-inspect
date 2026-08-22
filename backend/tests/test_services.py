@@ -140,8 +140,112 @@ def test_ai_provider_routes_capabilities_to_separate_base_urls(monkeypatch, tmp_
     assert calls[2][1]["json"]["dimensions"] == 256
 
 
+def test_ai_provider_uses_aliyun_native_api_for_qwen_audio(monkeypatch, tmp_path):
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "output": {
+                    "sentence": {"begin_time": 100, "end_time": 3800, "text": "测试"},
+                    "text": "完整测试文本",
+                },
+                "usage": {"duration": 4},
+            }
+
+    def fake_post(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response()
+
+    monkeypatch.setattr("app.services.ai.httpx.post", fake_post)
+    provider = AIProvider()
+    provider.settings = Settings(
+        ai_transcription_base_url=(
+            "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+        ),
+        ai_api_key="test-key",
+        ai_transcription_model="qwen-audio-3.0-asr-flash",
+    )
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"test")
+
+    assert provider.transcribe(audio) == [
+        {"start_ms": 0, "end_ms": 4000, "text": "完整测试文本"}
+    ]
+    assert calls[0][0] == (
+        "https://workspace.cn-beijing.maas.aliyuncs.com/"
+        "api/v1/services/aigc/multimodal-generation/generation"
+    )
+    request = calls[0][1]
+    assert request["headers"]["X-DashScope-SSE"] == "disable"
+    assert request["json"]["model"] == "qwen-audio-3.0-asr-flash"
+    assert request["json"]["parameters"] == {"format": "wav", "sample_rate": "16000"}
+    assert (
+        request["json"]["input"]["messages"][0]["content"][0]["input_audio"]["data"]
+        == "data:audio/wav;base64,dGVzdA=="
+    )
+
+
+def test_ai_provider_uses_chat_completions_for_qwen3_asr(monkeypatch, tmp_path):
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{"message": {"content": "转写文本"}}],
+                "usage": {"seconds": 2.5},
+            }
+
+    def fake_post(url, **kwargs):
+        calls.append((url, kwargs))
+        return Response()
+
+    monkeypatch.setattr("app.services.ai.httpx.post", fake_post)
+    provider = AIProvider()
+    provider.settings = Settings(
+        ai_transcription_base_url="https://workspace.cn-beijing.maas.aliyuncs.com/api/v1",
+        ai_api_key="test-key",
+        ai_transcription_model="qwen3-asr-flash",
+    )
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"test")
+
+    assert provider.transcribe(audio) == [
+        {"start_ms": 0, "end_ms": 2500, "text": "转写文本"}
+    ]
+    assert calls[0][0] == (
+        "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+    )
+    assert calls[0][1]["json"]["messages"][0]["content"][0]["type"] == "input_audio"
+
+
+def test_ai_provider_rejects_async_filetrans_model(tmp_path):
+    provider = AIProvider()
+    provider.settings = Settings(
+        ai_transcription_base_url="https://workspace.cn-beijing.maas.aliyuncs.com/api/v1",
+        ai_api_key="test-key",
+        ai_transcription_model="qwen3-asr-flash-filetrans",
+    )
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"test")
+
+    with pytest.raises(ValueError, match="仅支持异步文件转写"):
+        provider.transcribe(audio)
+
+
 def test_ai_capability_urls_fall_back_to_legacy_base_url():
-    settings = Settings(ai_base_url="https://legacy.example/v1")
+    settings = Settings(
+        ai_base_url="https://legacy.example/v1",
+        ai_chat_base_url=None,
+        ai_transcription_base_url=None,
+        ai_embedding_base_url=None,
+    )
     assert settings.chat_base_url == "https://legacy.example/v1"
     assert settings.transcription_base_url == "https://legacy.example/v1"
     assert settings.embedding_base_url == "https://legacy.example/v1"

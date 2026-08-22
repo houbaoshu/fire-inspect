@@ -9,7 +9,11 @@ from app.api.deps import accessible_inspection, get_current_user, model_dict
 from app.core.database import get_db
 from app.models import Evidence, Fact, FactEvidence, User
 from app.services.audit import audit
-from app.services.documents import mark_documents_stale, mark_fact_dependent_documents_stale
+from app.services.documents import (
+    mark_documents_stale,
+    mark_fact_dependent_documents_stale,
+    refresh_unedited_questions_answers,
+)
 
 router = APIRouter(tags=["检查事实"])
 
@@ -103,6 +107,8 @@ def create_fact(
     db.flush()
     _replace_evidence(db, fact, payload.evidence_ids)
     mark_fact_dependent_documents_stale(db, inspection_id)
+    if fact.kind in {"qa", "statement"}:
+        refresh_unedited_questions_answers(db, inspection_id)
     audit(
         db,
         actor_id=user.id,
@@ -131,6 +137,7 @@ def update_fact(
     db: Session = Depends(get_db),
 ):
     fact = _owned_fact(db, user, fact_id)
+    previous_kind = fact.kind
     if payload.kind is not None:
         fact.kind = payload.kind
     if payload.summary is not None:
@@ -142,6 +149,8 @@ def update_fact(
     fact.updated_by = user.id
     if fact.status == "confirmed":
         mark_fact_dependent_documents_stale(db, fact.inspection_id)
+        if {previous_kind, fact.kind}.intersection({"qa", "statement"}):
+            refresh_unedited_questions_answers(db, fact.inspection_id)
     else:
         mark_documents_stale(db, fact.id)
     audit(
@@ -172,6 +181,8 @@ def confirm_fact(
         mark_documents_stale(db, fact.id)
     else:
         mark_fact_dependent_documents_stale(db, fact.inspection_id)
+    if fact.kind in {"qa", "statement"}:
+        refresh_unedited_questions_answers(db, fact.inspection_id)
     audit(
         db,
         actor_id=user.id,
@@ -196,6 +207,8 @@ def reject_fact(
         mark_fact_dependent_documents_stale(db, fact.inspection_id)
     else:
         mark_documents_stale(db, fact.id)
+    if fact.kind in {"qa", "statement"}:
+        refresh_unedited_questions_answers(db, fact.inspection_id)
     audit(
         db,
         actor_id=user.id,

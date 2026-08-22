@@ -4,9 +4,10 @@ import json
 import shutil
 import subprocess
 import zipfile
+from types import SimpleNamespace
 
 from app.core.database import SessionLocal
-from app.models import Fact
+from app.models import Asset, Evidence, Fact, User, new_id
 from conftest import login
 from docx import Document
 
@@ -350,6 +351,99 @@ def test_photo_and_inquiry_documents_export_from_shared_facts(client):
                 assert any(name.startswith("word/media/") for name in archive.namelist())
             else:
                 assert "单位安全负责人" in xml
+
+
+def test_transcript_extraction_creates_reviewable_qa_and_refreshes_inquiry_draft(
+    client, monkeypatch
+):
+    user = login(client)
+    inspection = create_inspection(client)
+    asset_id = new_id()
+    transcript_id = new_id()
+    with SessionLocal() as db:
+        owner = db.get(User, user["id"])
+        assert owner is not None
+        db.add(
+            Asset(
+                id=asset_id,
+                inspection_id=inspection["id"],
+                kind="audio",
+                filename="inquiry.wav",
+                content_type="audio/wav",
+                storage_key=f"test/{asset_id}.wav",
+                processing_status="completed",
+                uploaded_by=owner.id,
+            )
+        )
+        db.add(
+            Evidence(
+                id=transcript_id,
+                inspection_id=inspection["id"],
+                asset_id=asset_id,
+                kind="transcript",
+                start_ms=0,
+                end_ms=10_000,
+                excerpt="问堆了多久？答半年了。问楼上是办公室吗？答是。",
+            )
+        )
+        db.commit()
+
+    template = next(
+        item
+        for item in client.get("/api/templates").json()
+        if item["document_type"] == "inquiry_record"
+    )
+    draft = client.post(
+        f"/api/inspections/{inspection['id']}/documents",
+        json={"template_id": template["id"]},
+    ).json()
+    assert draft["fields_json"]["questions_answers"]["value"] == ""
+
+    monkeypatch.setattr(
+        "app.modules.assets.get_settings", lambda: SimpleNamespace(ai_enabled=True)
+    )
+    monkeypatch.setattr(
+        "app.services.media.ai_provider.chat_json",
+        lambda **_: {
+            "qas": [
+                {
+                    "question": "这些物品堆放多久了？",
+                    "answer": "半年了。",
+                    "confidence": 0.92,
+                    "evidence_ids": [transcript_id],
+                },
+                {
+                    "question": "楼上是办公室吗？",
+                    "answer": "是。",
+                    "confidence": 0.88,
+                    "evidence_ids": [transcript_id],
+                },
+            ]
+        },
+    )
+
+    response = client.post(f"/api/assets/{asset_id}/extract-qa")
+    assert response.status_code == 200, response.text
+    assert response.json()["candidate_count"] == 2
+    facts = client.get(f"/api/inspections/{inspection['id']}/facts").json()
+    qa_facts = [item for item in facts if item["kind"] == "qa"]
+    assert len(qa_facts) == 2
+    assert all(item["status"] == "candidate" for item in qa_facts)
+    assert all(item["evidence_ids"] == [transcript_id] for item in qa_facts)
+    assert qa_facts[0]["content"]["speaker_attribution_confirmed"] is False
+
+    duplicate = client.post(f"/api/assets/{asset_id}/extract-qa")
+    assert duplicate.status_code == 200
+    assert duplicate.json()["candidate_count"] == 0
+
+    confirmed = client.post(f"/api/facts/{qa_facts[0]['id']}/confirm")
+    assert confirmed.status_code == 200, confirmed.text
+    refreshed = client.get(f"/api/inspections/{inspection['id']}/documents").json()[0]
+    field = refreshed["fields_json"]["questions_answers"]
+    assert "问：这些物品堆放多久了？\n答：半年了。" in field["value"]
+    assert field["fact_ids"] == [qa_facts[0]["id"]]
+    assert field["evidence_ids"] == [transcript_id]
+    assert field["stale"] is False
 
 
 def test_uploaded_template_fields_can_be_configured_without_changing_codes(client):
