@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${FIRE_POSTGRES_DB:-fire_inspect}
+      POSTGRES_USER: ${FIRE_POSTGRES_USER:-fire_inspect}
+      POSTGRES_PASSWORD: ${FIRE_POSTGRES_PASSWORD:-fire_inspect}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${FIRE_S3_ACCESS_KEY:-fireinspect}
+      MINIO_ROOT_PASSWORD: ${FIRE_S3_SECRET_KEY:-change-me}
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: sh -c "alembic upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      FIRE_DATABASE_URL: postgresql+psycopg://${FIRE_POSTGRES_USER:-fire_inspect}:${FIRE_POSTGRES_PASSWORD:-fire_inspect}@postgres/${FIRE_POSTGRES_DB:-fire_inspect}
+      FIRE_STORAGE_BACKEND: s3
+      FIRE_REDIS_URL: redis://redis:6379/0
+      FIRE_TASK_ALWAYS_EAGER: "false"
+      FIRE_S3_ENDPOINT: http://minio:9000
+      FIRE_S3_ACCESS_KEY: ${FIRE_S3_ACCESS_KEY:-fireinspect}
+      FIRE_S3_SECRET_KEY: ${FIRE_S3_SECRET_KEY:-change-me}
+      FIRE_S3_BUCKET: ${FIRE_S3_BUCKET:-fire-inspect}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A backend.app.tasks.celery_app worker --loglevel=INFO
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      FIRE_DATABASE_URL: postgresql+psycopg://${FIRE_POSTGRES_USER:-fire_inspect}:${FIRE_POSTGRES_PASSWORD:-fire_inspect}@postgres/${FIRE_POSTGRES_DB:-fire_inspect}
+      FIRE_STORAGE_BACKEND: s3
+      FIRE_REDIS_URL: redis://redis:6379/0
+      FIRE_TASK_ALWAYS_EAGER: "false"
+      FIRE_S3_ENDPOINT: http://minio:9000
+      FIRE_S3_ACCESS_KEY: ${FIRE_S3_ACCESS_KEY:-fireinspect}
+      FIRE_S3_SECRET_KEY: ${FIRE_S3_SECRET_KEY:-change-me}
+      FIRE_S3_BUCKET: ${FIRE_S3_BUCKET:-fire-inspect}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  web:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  minio_data:
