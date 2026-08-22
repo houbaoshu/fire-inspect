@@ -1,0 +1,6 @@
+# 依赖白名单见锁文件（--frozen-lockfile 供应链校验）；
+# pnpm 11.21 在 frozen 模式下不应用 onlyBuiltDependencies，故同时开启 allowAllBuilds。
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi
+dangerouslyAllowAllBuilds: true

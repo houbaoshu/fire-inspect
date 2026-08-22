@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# 测试视频体积大且属敏感执法材料，不进 git（团队共享走内网盘）
+testdata/videos/
+.env
+
+# 运行时数据与构建产物
+data/
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+frontend/node_modules/
+frontend/dist/
