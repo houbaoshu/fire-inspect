@@ -1,0 +1,87 @@
+from django.urls import re_path
+
+from .views import (
+    DocumentConfirmView,
+    DocumentDetailView,
+    DocumentExportView,
+    DocumentFactDependencyView,
+    DocumentFieldView,
+    DocumentGenerateView,
+    DocumentPhotoCandidateView,
+    DocumentPhotoItemDetailView,
+    DocumentPhotoItemListView,
+    DocumentQaItemDetailView,
+    DocumentQaItemListView,
+    DocumentQaSyncView,
+    InspectionDocumentListCreateView,
+)
+
+UUID = r"[0-9a-fA-F-]{36}"
+
+urlpatterns = [
+    re_path(
+        rf"^inspections/(?P<inspection_id>{UUID})/documents/?$",
+        InspectionDocumentListCreateView.as_view(),
+        name="inspection-document-list",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/?$",
+        DocumentDetailView.as_view(),
+        name="document-detail",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/fields/(?P<field_key>[A-Za-z0-9_-]+)/?$",
+        DocumentFieldView.as_view(),
+        name="document-field",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/fact-dependencies/?$",
+        DocumentFactDependencyView.as_view(),
+        name="document-fact-dependencies",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/photo-candidates/?$",
+        DocumentPhotoCandidateView.as_view(),
+        name="document-photo-candidates",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/photo-items/?$",
+        DocumentPhotoItemListView.as_view(),
+        name="document-photo-items",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/photo-items/(?P<item_id>{UUID})/?$",
+        DocumentPhotoItemDetailView.as_view(),
+        name="document-photo-item",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/qa-items/?$",
+        DocumentQaItemListView.as_view(),
+        name="document-qa-items",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/qa-items/sync/?$",
+        DocumentQaSyncView.as_view(),
+        name="document-qa-sync",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/qa-items/(?P<item_id>{UUID})/?$",
+        DocumentQaItemDetailView.as_view(),
+        name="document-qa-item",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/generate/?$",
+        DocumentGenerateView.as_view(),
+        name="document-generate",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/confirm/?$",
+        DocumentConfirmView.as_view(),
+        name="document-confirm",
+    ),
+    re_path(
+        rf"^documents/(?P<document_id>{UUID})/export/?$",
+        DocumentExportView.as_view(),
+        name="document-export",
+    ),
+]

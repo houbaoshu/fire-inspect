@@ -1,19 +1,20 @@
-# Local secrets
-.env
-
-# Sensitive large acceptance media; obtain from the authorized internal share
-testdata/videos/
-
-# macOS and editor artifacts
-.DS_Store
-
-# Runtime data, dependencies, caches and build outputs
-data/
-node_modules/
-dist/
-.venv/
-__pycache__/
-*.py[cod]
+.coverage
 .pytest_cache/
 .ruff_cache/
-coverage/
+.uv-cache/
+.venv/
+.env
+.env.*
+.DS_Store
+.pnpm-store/
+__pycache__/
+*.py[cod]
+data/
+frontend/dist/
+frontend/node_modules/
+htmlcov/
+*.log
+test-results/
+testdata/videos/
+deploy/certs/
+deploy/fonts/

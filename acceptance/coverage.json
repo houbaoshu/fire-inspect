@@ -1,0 +1,283 @@
+{
+  "schema_version": 2,
+  "source": "docs/ACCEPTANCE.md",
+  "result_files": {
+    "backend-fast": {
+      "gate": "fast",
+      "framework": "pytest",
+      "path": "test-results/backend-fast.xml"
+    },
+    "frontend-fast": {
+      "gate": "fast",
+      "framework": "vitest",
+      "path": "test-results/frontend-fast.xml",
+      "path_prefix": "frontend"
+    },
+    "local-acceptance": {
+      "gate": "local-acceptance",
+      "framework": "pytest",
+      "path": "test-results/local-acceptance.xml"
+    },
+    "real-ai": {
+      "gate": "real-ai",
+      "framework": "pytest",
+      "path": "test-results/real-ai.xml"
+    },
+    "windows-docx": {
+      "gate": "windows-docx",
+      "framework": "pytest",
+      "path": "test-results/windows-docx.xml"
+    },
+    "postgres": {
+      "gate": "postgres",
+      "framework": "pytest",
+      "path": "test-results/postgres.xml"
+    },
+    "browser-e2e": {
+      "gate": "browser-e2e",
+      "framework": "playwright",
+      "path": "test-results/browser-e2e.xml",
+      "path_prefix": "frontend/e2e"
+    }
+  },
+  "items": [
+    {
+      "id": "AC-2-AUTOMATION",
+      "section": "2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/stage0/test_runtime_configuration.py::test_test_runtime_uses_sqlite_and_production_driver_is_available"}],
+      "artifacts": ["Makefile"]
+    },
+    {
+      "id": "AC-2-FIXED-AI",
+      "section": "2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/ai/test_ai_job_handlers.py::test_asr_vision_and_fact_handlers_publish_traceable_results"}]
+    },
+    {
+      "id": "AC-2-REAL-AI",
+      "section": "2",
+      "gate": "real-ai",
+      "tests": [{"result": "real-ai", "node": "tests/acceptance/test_real_ai.py::test_authorized_real_ai_jobs_publish_safe_results_for_acceptance_inputs"}]
+    },
+    {
+      "id": "AC-2-DOCX-STRUCTURE",
+      "section": "2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_three_photo_document_has_three_page_blocks_and_three_real_images"}]
+    },
+    {
+      "id": "AC-2-DOCX-VISUAL",
+      "section": "2",
+      "gate": "windows-docx",
+      "tests": [{"result": "windows-docx", "node": "tests/acceptance/test_windows_docx.py::test_designated_windows_word_or_wps_review_approves_every_generated_page"}],
+      "artifacts": ["docs/windows-docx-approval.example.json"]
+    },
+    {
+      "id": "AC-3-OWNER-IDOR",
+      "section": "3.1",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/security/test_permission_matrix.py::test_other_inspector_cannot_guess_read_write_delete_or_submit_jobs"}]
+    },
+    {
+      "id": "AC-3-ADMIN-403",
+      "section": "3.2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/security/test_permission_matrix.py::test_inspector_is_forbidden_from_admin_management_endpoints"}]
+    },
+    {
+      "id": "AC-3-UNAUTH-401",
+      "section": "3.3",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/security/test_permission_matrix.py::test_anonymous_business_and_file_endpoints_consistently_return_401"}]
+    },
+    {
+      "id": "AC-3-UPLOAD-SAFETY",
+      "section": "3.4",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/security/test_file_and_redaction_safety.py::test_dangerous_double_extension_and_declared_mime_mismatch_are_rejected"}]
+    },
+    {
+      "id": "AC-3-REDACTION",
+      "section": "3.5",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/security/test_file_and_redaction_safety.py::test_audit_and_api_payloads_redact_canary_secrets_paths_and_identifiers"}]
+    },
+    {
+      "id": "AC-4-VIDEO-1",
+      "section": "4.1",
+      "gate": "local-acceptance",
+      "tests": [{"result": "local-acceptance", "node": "tests/acceptance/test_fixed_e2e.py::test_fixed_ai_full_delivery_flow"}],
+      "artifacts": ["testdata/expected/acceptance-cases.json"]
+    },
+    {
+      "id": "AC-4-VIDEO-4",
+      "section": "4.2",
+      "gate": "local-acceptance",
+      "tests": [{"result": "local-acceptance", "node": "tests/acceptance/test_fixed_e2e.py::test_fixed_ai_full_delivery_flow"}],
+      "artifacts": ["testdata/expected/acceptance-cases.json"]
+    },
+    {
+      "id": "AC-4-MANUAL-HISTORY",
+      "section": "4.3",
+      "gate": "fast",
+      "tests": [
+        {"result": "backend-fast", "node": "tests/transcripts/test_transcript_api.py::test_owner_edits_text_and_confirms_roles_with_history"},
+        {"result": "backend-fast", "node": "tests/facts/test_fact_api.py::test_manual_fact_lifecycle_and_history"}
+      ]
+    },
+    {
+      "id": "AC-5-CLAUSE-SEARCH",
+      "section": "5.1",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/unit/knowledge/test_fire_law_parser.py::test_exact_and_lexical_retrieval_return_verbatim_source"}],
+      "artifacts": ["testdata/expected/knowledge-cases.json"]
+    },
+    {
+      "id": "AC-5-INTERNAL-CATEGORY",
+      "section": "5.2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/knowledge/test_knowledge_api.py::test_internal_policy_cannot_be_uploaded_as_formal_law"}]
+    },
+    {
+      "id": "AC-5-NOT-FOUND",
+      "section": "5.3",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/knowledge/test_knowledge_api.py::test_unrelated_query_is_explicit_not_found"}]
+    },
+    {
+      "id": "AC-5-SOURCE-NAV",
+      "section": "5.4",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/assistant/test_assistant_api.py::test_assistant_retrieves_traceable_unlinked_clause_without_widening_inspection_scope"}]
+    },
+    {
+      "id": "AC-5-PENDING-SOURCE",
+      "section": "5.5",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/knowledge/test_knowledge_api.py::test_admin_upload_only_queues_then_worker_parses_all_articles"}]
+    },
+    {
+      "id": "AC-6-TEMPLATE-REGIONS",
+      "section": "6",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/unit/documents/test_template_recognition.py::test_authoritative_template_types_and_fill_strategies"}]
+    },
+    {
+      "id": "AC-6-MAPPING-EDIT",
+      "section": "6",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/templates/test_template_api.py::test_mapping_edit_confirm_and_revise_are_versioned"}]
+    },
+    {
+      "id": "AC-7-RECORD-DOCX",
+      "section": "7.1",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_record_document_fills_correct_cells_and_exactly_one_checkbox[其它检查]"}]
+    },
+    {
+      "id": "AC-7-PHOTO-DOCX",
+      "section": "7.2",
+      "gate": "fast",
+      "tests": [
+        {"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_three_photo_document_has_three_page_blocks_and_three_real_images"},
+        {"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_photo_images_keep_pixel_aspect_ratio_and_stay_inside_region"}
+      ]
+    },
+    {
+      "id": "AC-7-INTERVIEW-DOCX",
+      "section": "7.3",
+      "gate": "fast",
+      "tests": [
+        {"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_interview_header_and_confirmed_qa_are_underlined_and_independent"},
+        {"result": "backend-fast", "node": "tests/unit/documents/test_document_generation.py::test_interview_preserves_all_footer_fields_and_requests_field_refresh"}
+      ]
+    },
+    {
+      "id": "AC-7-WORD-WPS",
+      "section": "7",
+      "gate": "windows-docx",
+      "tests": [{"result": "windows-docx", "node": "tests/acceptance/test_windows_docx.py::test_designated_windows_word_or_wps_review_approves_every_generated_page"}]
+    },
+    {
+      "id": "AC-8-MANUAL-PROTECTION",
+      "section": "8.1",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/documents/test_document_api.py::test_generated_field_merge_preserves_manual_content_unless_explicitly_overridden"}]
+    },
+    {
+      "id": "AC-8-INVALIDATION",
+      "section": "8.2",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/documents/test_document_api.py::test_shared_field_change_invalidates_all_three_confirmed_documents_synchronously"}]
+    },
+    {
+      "id": "AC-8-STABILITY",
+      "section": "8.3",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/documents/test_document_api.py::test_no_effective_shared_change_does_not_invalidate_confirmed_document"}]
+    },
+    {
+      "id": "AC-8-IDEMPOTENCY",
+      "section": "8.4",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/jobs/test_job_services.py::test_enqueue_is_idempotent_and_conflicting_reuse_is_rejected"}]
+    },
+    {
+      "id": "AC-9-AI-FAILURES",
+      "section": "9",
+      "gate": "fast",
+      "tests": [
+        {"result": "backend-fast", "node": "tests/ai/test_ai_job_handlers.py::test_ai_handler_failure_never_deletes_original_or_previous_manual_content"},
+        {"result": "backend-fast", "node": "tests/knowledge/test_embedding_jobs.py::test_failed_embedding_can_be_retried_alone_without_duplicates"}
+      ]
+    },
+    {
+      "id": "AC-9-MANUAL-TRANSCRIPT-FALLBACK",
+      "section": "9",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/transcripts/test_transcript_api.py::test_owner_can_create_time_anchored_manual_transcript_when_asr_is_unavailable"}]
+    },
+    {
+      "id": "AC-9-DOCX-ATOMIC",
+      "section": "9",
+      "gate": "fast",
+      "tests": [{"result": "backend-fast", "node": "tests/documents/test_document_api.py::test_document_generation_job_failure_is_atomic_and_retries_same_job[render]"}]
+    },
+    {
+      "id": "AC-10-FIXED-E2E",
+      "section": "10",
+      "gate": "local-acceptance",
+      "tests": [{"result": "local-acceptance", "node": "tests/acceptance/test_fixed_e2e.py::test_fixed_ai_full_delivery_flow"}]
+    },
+    {
+      "id": "AC-10-FRONTEND",
+      "section": "10",
+      "gate": "fast",
+      "tests": [
+        {"result": "frontend-fast", "node": "frontend/src/pages/WorkspacePage.test.tsx::WorkspacePage > supports a direct regulations route and exposes every required workbench tab"},
+        {"result": "frontend-fast", "node": "frontend/src/components/AIAssistant.test.tsx::AIAssistant > submits the server contract and performs a typed same-inspection navigation"}
+      ]
+    },
+    {
+      "id": "AC-10-BROWSER-HTTPS",
+      "section": "10",
+      "gate": "browser-e2e",
+      "tests": [{"result": "browser-e2e", "node": "frontend/e2e/compose.e2e.ts::HTTPS login, material upload, and deep SPA refresh stay same-origin"}],
+      "artifacts": ["frontend/playwright.config.ts"]
+    },
+    {
+      "id": "AC-10-POSTGRES",
+      "section": "10",
+      "gate": "postgres",
+      "tests": [{"result": "postgres", "node": "tests/acceptance/test_postgres_concurrency.py::test_two_postgres_workers_claim_distinct_jobs_with_skip_locked"}]
+    },
+    {
+      "id": "AC-10-RESTORE",
+      "section": "10",
+      "gate": "postgres",
+      "tests": [{"result": "postgres", "node": "tests/acceptance/test_backup_restore.py::test_consistent_backup_restores_database_and_files_into_empty_environment"}],
+      "artifacts": ["docs/OPERATIONS.md"]
+    }
+  ]
+}

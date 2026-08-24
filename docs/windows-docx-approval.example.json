@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "environment": {
+    "os": "Windows",
+    "application": "Microsoft Word",
+    "version": "REPLACE_WITH_EXACT_WORD_OR_WPS_VERSION",
+    "render_export_method": "REPLACE_WITH_PNG_EXPORT_METHOD",
+    "fonts": [
+      "FangSong",
+      "FZXiaoBiaoSong-B05S",
+      "KaiTi",
+      "Microsoft YaHei",
+      "Microsoft YaHei UI",
+      "SimSun"
+    ]
+  },
+  "fields_updated": true,
+  "all_pages_checked_at_100_percent": true,
+  "reviewer": "REPLACE_WITH_REVIEWER_NAME",
+  "reviewed_at": "2026-08-24T12:00:00+08:00",
+  "documents": {
+    "record.docx": {
+      "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256",
+      "passed": true,
+      "page_count": 1,
+      "no_clipping_or_overlap": true,
+      "fonts_images_footer_valid": true,
+      "visual_baseline_sha256": "REPLACE_WITH_BASELINE_MANIFEST_SHA256",
+      "rendered_pages": [
+        {"page_number": 1, "image": "rendered/record/page-001.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256"}
+      ]
+    },
+    "photo-three-pages.docx": {
+      "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256",
+      "passed": true,
+      "page_count": 3,
+      "no_clipping_or_overlap": true,
+      "fonts_images_footer_valid": true,
+      "visual_baseline_sha256": "REPLACE_WITH_BASELINE_MANIFEST_SHA256",
+      "rendered_pages": [
+        {"page_number": 1, "image": "rendered/photo/page-001.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256"},
+        {"page_number": 2, "image": "rendered/photo/page-002.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256"},
+        {"page_number": 3, "image": "rendered/photo/page-003.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256"}
+      ]
+    },
+    "interview-short.docx": {
+      "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256",
+      "passed": true,
+      "page_count": 3,
+      "no_clipping_or_overlap": true,
+      "fonts_images_footer_valid": true,
+      "visual_baseline_sha256": "REPLACE_WITH_BASELINE_MANIFEST_SHA256",
+      "rendered_pages": [
+        {"page_number": 1, "image": "rendered/interview-short/page-001.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 1, "footer_total_pages": 3},
+        {"page_number": 2, "image": "rendered/interview-short/page-002.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 2, "footer_total_pages": 3},
+        {"page_number": 3, "image": "rendered/interview-short/page-003.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 3, "footer_total_pages": 3}
+      ]
+    },
+    "interview-long.docx": {
+      "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256",
+      "passed": true,
+      "page_count": 5,
+      "no_clipping_or_overlap": true,
+      "fonts_images_footer_valid": true,
+      "visual_baseline_sha256": "REPLACE_WITH_BASELINE_MANIFEST_SHA256",
+      "rendered_pages": [
+        {"page_number": 1, "image": "rendered/interview-long/page-001.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 1, "footer_total_pages": 5},
+        {"page_number": 2, "image": "rendered/interview-long/page-002.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 2, "footer_total_pages": 5},
+        {"page_number": 3, "image": "rendered/interview-long/page-003.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 3, "footer_total_pages": 5},
+        {"page_number": 4, "image": "rendered/interview-long/page-004.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 4, "footer_total_pages": 5},
+        {"page_number": 5, "image": "rendered/interview-long/page-005.png", "sha256": "REPLACE_WITH_PNG_SHA256", "source_docx_sha256": "REPLACE_WITH_GENERATED_SHA256", "footer_current_page": 5, "footer_total_pages": 5}
+      ]
+    }
+  }
+}

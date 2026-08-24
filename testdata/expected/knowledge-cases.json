@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "document": "testdata/knowledge/reg_ec997c582c9c29a6.pdf",
+  "source_verification": "pending",
+  "cases": [
+    {
+      "id": "automatic-fire-system-operator-certification",
+      "query": "自动消防系统操作人员必须持证上岗",
+      "expected": "found",
+      "expected_clause": "第二十一条",
+      "expected_content_sha256": "6a6e14aa21c8f0b4113c4f1b71467daf5df82a5df2d8844731bd99d437d44346"
+    },
+    {
+      "id": "evacuation-route-duty",
+      "query": "单位应当保障疏散通道和安全出口畅通",
+      "expected": "found",
+      "expected_clause": "第十六条",
+      "expected_content_sha256": "b7894d8abf5351779ccdfbbeb36f66e37c0c806e0de770c63283ad52b76bdbd0"
+    },
+    {
+      "id": "unrelated-quantum-portal",
+      "query": "量子传送门的星际消防许可规则",
+      "expected": "not_found"
+    }
+  ]
+}
