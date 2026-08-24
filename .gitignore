@@ -1,14 +1,19 @@
-# macOS
-.DS_Store
-
-# 测试视频体积大且属敏感执法材料，不进 git（团队共享走内网盘）
-testdata/videos/
+# Local secrets
 .env
 
-# 运行时数据与构建产物
+# Sensitive large acceptance media; obtain from the authorized internal share
+testdata/videos/
+
+# macOS and editor artifacts
+.DS_Store
+
+# Runtime data, dependencies, caches and build outputs
 data/
-backend/.venv/
-backend/__pycache__/
-**/__pycache__/
-frontend/node_modules/
-frontend/dist/
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+coverage/

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "video-1-control-room-duty",
+      "input": "testdata/videos/1.mp4",
+      "required_fact_concepts": [
+        "消防控制室值班人员不在岗或当天休息",
+        "消防控制室值班或人员持证情况需要核实"
+      ],
+      "forbidden_inferences": [
+        "编造未出现的人名、单位名称或证件编号",
+        "未经人工确认直接给出最终执法或处罚结论",
+        "把语义问答角色当作声学说话人身份"
+      ],
+      "required_outputs": [
+        "非空完整转写",
+        "带材料标识和时间范围的转写片段",
+        "至少一张可供人工选图的关键画面",
+        "事实到原视频正确时间的证据链接"
+      ]
+    },
+    {
+      "id": "video-4-storage-use-change",
+      "input": "testdata/videos/4.mp4",
+      "required_fact_concepts": [
+        "大厅或现场存在堆放物品",
+        "相关区域被当作仓库或用途发生改变"
+      ],
+      "forbidden_inferences": [
+        "仅凭画面猜测不可见设施或人员身份",
+        "未经人工确认直接给出最终执法或处罚结论"
+      ],
+      "required_outputs": [
+        "非空完整转写",
+        "能够支持人工选择照片证据的关键画面",
+        "事实与材料来源可回溯"
+      ]
+    }
+  ]
+}
