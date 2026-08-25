@@ -39,6 +39,7 @@ def test_images_pin_postgres_17_clients_and_nginx_drops_root() -> None:
     assert "USER fire-inspect" in application
     assert not any(line.strip().startswith("HOME=") for line in application.splitlines())
     assert "USER nginx" in proxy
+    assert "fire-inspect-nginx-entrypoint" in proxy
     assert "listen 8080;" in nginx
     assert "listen 8443 ssl;" in nginx
     assert "try_files $uri $uri/ /index.html;" in nginx
@@ -47,6 +48,17 @@ def test_images_pin_postgres_17_clients_and_nginx_drops_root() -> None:
     nginx_main = (ROOT / "deploy/nginx-main.conf").read_text(encoding="utf-8")
     assert "limit_conn_zone $upload_limit_key zone=upload_concurrency:10m" in nginx_main
     assert "limit_conn upload_concurrency 4;" in nginx
+
+
+def test_nginx_redirect_uses_the_configured_external_https_port() -> None:
+    compose = (ROOT / "compose.yaml").read_text(encoding="utf-8")
+    nginx = (ROOT / "deploy/nginx.conf").read_text(encoding="utf-8")
+    entrypoint = (ROOT / "deploy/nginx-entrypoint.sh").read_text(encoding="utf-8")
+
+    assert "FIRE_INSPECT_HTTPS_PORT: ${FIRE_INSPECT_HTTPS_PORT:-443}" in compose
+    assert "https://$host__FIRE_INSPECT_HTTPS_PORT_SUFFIX__$request_uri" in nginx
+    assert 'https_port_suffix=":$https_port"' in entrypoint
+    assert 'if [ "$https_port" -eq 443 ]' in entrypoint
 
 
 def test_entrypoint_does_not_write_application_root_or_repurpose_home() -> None:

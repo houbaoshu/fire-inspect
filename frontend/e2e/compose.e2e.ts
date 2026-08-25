@@ -40,7 +40,7 @@ test("HTTPS login, material upload, and deep SPA refresh stay same-origin", asyn
   await expect(page).toHaveURL(`${baseURL}/inspections`);
   expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
 
-  await page.getByRole("link", { name: /新建检查/ }).click();
+  await page.getByRole("link", { name: "新建检查", exact: true }).click();
   await page.getByLabel(/单位（场所）名称/).fill("浏览器验收消防安全示例单位");
   await page.getByLabel(/^地址/).fill("海州市内网验收路 18 号");
   await page.getByLabel(/法定代表人/).fill("验收负责人");

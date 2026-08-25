@@ -2327,11 +2327,12 @@ def confirm_document(
 def export_document(
     *, document: InspectionDocument, actor, expected_revision: int
 ) -> tuple[DocumentExport, bytes]:
-    document = (
-        InspectionDocument.objects.select_for_update()
-        .select_related("last_generated_revision")
-        .get(pk=document.pk)
-    )
+    # Lock only the document row. PostgreSQL rejects FOR UPDATE when Django's
+    # select_related() introduces the nullable last_generated_revision outer
+    # join ("FOR UPDATE cannot be applied to the nullable side"). The foreign
+    # key is stable while the document row lock is held, so a separate read is
+    # both portable and concurrency-safe.
+    document = InspectionDocument.objects.select_for_update().get(pk=document.pk)
     _check_revision(document, expected_revision)
     if document.state != InspectionDocument.State.CONFIRMED:
         raise DocumentServiceError(

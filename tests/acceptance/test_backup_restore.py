@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import psycopg
 import pytest
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import PBKDF2PasswordHasher, make_password
 from django.contrib.sessions.models import Session
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -98,7 +98,10 @@ def test_consistent_backup_restores_database_and_files_into_empty_environment(
     )
 
     smoke_password = "Restore-Smoke-User-Password-42!"
-    inspector_a.password = make_password(smoke_password, hasher="pbkdf2_sha256")
+    # The fast test fixture deliberately narrows PASSWORD_HASHERS to MD5. Build
+    # a production-compatible credential explicitly so the restored runtime,
+    # which enables Argon2/PBKDF2 only, can authenticate the smoke-test user.
+    inspector_a.password = make_password(smoke_password, hasher=PBKDF2PasswordHasher())
     inspector_a.save(update_fields=("password",))
     inspection = create_inspection(inspector_a)
     Session.objects.create(

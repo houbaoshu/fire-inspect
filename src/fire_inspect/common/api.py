@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -9,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
 from fire_inspect.operations.redaction import redact_text
+
+logger = logging.getLogger(__name__)
 
 
 class ApiError(APIException):
@@ -76,6 +79,13 @@ def _plain(value: Any) -> Any:
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
     response = drf_exception_handler(exc, context)
     if response is None:
+        # Keep the public response deliberately generic, but retain the safe
+        # exception type in structured logs so production-only failures remain
+        # diagnosable. JsonLogFormatter does not serialize traceback messages.
+        logger.error(
+            "unhandled API exception",
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
         return Response(
             {
                 "error": {

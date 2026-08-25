@@ -1,5 +1,9 @@
 UV_CACHE_DIR ?= $(CURDIR)/.uv-cache
 PYTEST = UV_CACHE_DIR=$(UV_CACHE_DIR) uv run --frozen pytest
+LOCAL_ACCEPTANCE_ENV =
+ifeq ($(shell uname -s),Darwin)
+LOCAL_ACCEPTANCE_ENV = TMPDIR=/private/tmp
+endif
 
 .PHONY: sync fast backend frontend local-acceptance real-ai windows-docx postgres browser-e2e acceptance-coverage
 
@@ -29,7 +33,7 @@ fast: backend frontend
 local-acceptance:
 	mkdir -p test-results
 	UV_CACHE_DIR=$(UV_CACHE_DIR) uv run --frozen python scripts/verify_authoritative_assets.py --include-sensitive
-	$(PYTEST) --run-local-acceptance -m local_acceptance --junitxml=test-results/local-acceptance.xml
+	$(LOCAL_ACCEPTANCE_ENV) $(PYTEST) --run-local-acceptance -m local_acceptance --junitxml=test-results/local-acceptance.xml
 	UV_CACHE_DIR=$(UV_CACHE_DIR) uv run --frozen python scripts/validate_acceptance_coverage.py --require-gate local-acceptance
 
 real-ai:

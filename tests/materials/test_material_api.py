@@ -163,9 +163,7 @@ def test_upload_limit_does_not_replace_unauthenticated_401(
     def refuse_slot(**kwargs):
         raise UploadCapacityExhausted
 
-    monkeypatch.setattr(
-        "fire_inspect.materials.middleware.acquire_upload_slot", refuse_slot
-    )
+    monkeypatch.setattr("fire_inspect.materials.middleware.acquire_upload_slot", refuse_slot)
     response = api_client.post(upload_url(inspection), {"file": png_upload()})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
