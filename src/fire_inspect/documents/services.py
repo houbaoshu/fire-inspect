@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -1888,8 +1889,11 @@ def render_generated_document(
     payload: bytes,
     *,
     document_type: str,
-    allow_font_substitution: bool = False,
+    allow_font_substitution: bool | None = None,
 ) -> RenderedDocument:
+    if allow_font_substitution is None:
+        # Dev-only escape hatch; always False under FIRE_INSPECT_ENV=production.
+        allow_font_substitution = settings.ALLOW_FONT_SUBSTITUTION
     with tempfile.TemporaryDirectory(prefix="fire-inspect-document-precheck-") as temporary:
         output_dir = Path(temporary) / "render"
         if document_type == InspectionDocument.Type.INTERVIEW:

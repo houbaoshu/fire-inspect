@@ -5,7 +5,10 @@ ifeq ($(shell uname -s),Darwin)
 LOCAL_ACCEPTANCE_ENV = TMPDIR=/private/tmp
 endif
 
-.PHONY: sync fast backend frontend local-acceptance real-ai windows-docx postgres browser-e2e acceptance-coverage
+.PHONY: sync fast backend frontend local-acceptance real-ai windows-docx postgres browser-e2e acceptance-coverage dev-ai
+
+dev-ai:
+	./scripts/dev_with_ai.sh
 
 sync:
 	UV_CACHE_DIR=$(UV_CACHE_DIR) uv sync --frozen --group dev

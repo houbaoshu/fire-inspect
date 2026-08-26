@@ -10,6 +10,14 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 ENVIRONMENT = os.getenv("FIRE_INSPECT_ENV", "development").strip().lower()
 DEBUG = os.getenv("FIRE_INSPECT_DEBUG", "1" if ENVIRONMENT != "production" else "0") == "1"
 
+# Local development may render DOCX previews without the licensed Windows font
+# families (FangSong/SimSun/...). Render reports then carry font_fidelity=False
+# and cannot count as visual acceptance. Hard-disabled for production.
+ALLOW_FONT_SUBSTITUTION = (
+    os.getenv("FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION", "0") == "1"
+    and ENVIRONMENT != "production"
+)
+
 
 def _production_secret() -> str:
     value = os.getenv("FIRE_INSPECT_SECRET_KEY", "")

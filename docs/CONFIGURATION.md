@@ -30,6 +30,7 @@
 | `FIRE_INSPECT_WEB_GRACEFUL_TIMEOUT` | Web 优雅退出等待时间，默认 30 秒 |
 | `FIRE_INSPECT_COOKIE_SECURE` | 生产预检必须为真；Compose 默认开启 |
 | `FIRE_INSPECT_REQUIRED_FONTS` | 生产 Compose 固定为三份权威模板所需字体族；缺少任一项拒绝启动 |
+| `FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION` | 仅限开发：缺少模板授权字体时仍允许结构/几何预览渲染，渲染报告标记 `font_fidelity=false`，不作为视觉验收依据；生产环境设置会被预检拒绝并强制关闭 |
 
 三组数据库密码分别注入 bootstrap、迁移和运行时职责，不能复用。实现不会把密码拼接进数据库 URL，因此 `@:/?#%+` 等 URL 保留字符可以直接用于强随机密码。数据库密码至少 16 字符且不能使用示例占位值；应用密钥至少 50 字符并需要足够字符多样性。全部秘密都应由受保护的秘密管理器生成、注入和轮换，不要写入 `.env`、Compose 覆盖文件、命令行参数、备份或工单。
 

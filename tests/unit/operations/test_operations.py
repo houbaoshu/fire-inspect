@@ -238,6 +238,12 @@ def test_production_preflight_rejects_fixed_or_incomplete_ai_provider() -> None:
     )
 
 
+def test_production_preflight_rejects_font_substitution() -> None:
+    with pytest.raises(PreflightError, match="字体替代"):
+        validate_ai_environment({"FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION": "1"})
+    validate_ai_environment({"FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION": "0"})
+
+
 def test_log_redaction_masks_all_canaries() -> None:
     message = (
         "Authorization: Bearer TOKEN-CANARY sessionid=COOKIE-CANARY "

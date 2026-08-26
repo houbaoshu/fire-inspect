@@ -408,6 +408,8 @@ def validate_ai_environment(environment: Mapping[str, str] | None = None) -> Non
 
     source = os.environ if environment is None else environment
     failures: list[str] = []
+    if source.get("FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION", "0") == "1":
+        failures.append("生产环境禁止字体替代渲染（FIRE_INSPECT_ALLOW_FONT_SUBSTITUTION）")
     for capability in ("ASR", "LLM", "VISION", "EMBEDDING"):
         prefix = f"FIRE_INSPECT_{capability}"
         provider = source.get(f"{prefix}_PROVIDER", "disabled").strip().lower()
