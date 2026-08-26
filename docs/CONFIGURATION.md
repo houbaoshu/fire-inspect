@@ -61,6 +61,8 @@ ASR、LLM、Vision、Embedding 分别使用下列同构变量；把 `<CAPABILITY
 
 设置 `FIRE_INSPECT_REAL_AI_APPROVED=1`，并为 ASR、LLM、VISION、EMBEDDING 四类能力分别设置 `PROVIDER=http`、`ENDPOINT`、`MODEL` 和 `API_KEY`，然后运行 `make real-ai`。此门槛只保存模型/端点类别、输入哈希和脱敏结论，不保存完整媒体、转写或响应。不得把 `fixed` 用于正式交付结论。
 
+本地没有内网 AI 网关时，可用 `scripts/dev_ai_gateway.py` 作为开发用翻译网关：它监听 127.0.0.1，把内部协议翻译成 DashScope OpenAI 兼容调用（ASR 走 qwen3-asr 系列，按 `ASR_WINDOW_SEC`/`ASR_OVERLAP_SEC` 分窗转写；视觉、事实抽取走多模态/对话模型；Embedding 走 text-embedding 系列）。启动方式：`set -a; source .env; set +a; uv run --frozen python scripts/dev_ai_gateway.py --port 8787`，然后把四类能力的 `ENDPOINT` 指向 `http://127.0.0.1:8787/`、`MODEL` 指向对应阿里模型。该网关只是验收工具，不是部署组件；注意它会将材料音频和关键帧发送到所配置的外部模型服务。
+
 ### Windows Word/WPS
 
 1. 在非敏感输出目录运行 `uv run python scripts/generate_docx_acceptance_fixtures.py --output-dir <目录>`。
