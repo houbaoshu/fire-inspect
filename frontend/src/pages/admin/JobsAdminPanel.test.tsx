@@ -32,4 +32,30 @@ describe("JobsAdminPanel", () => {
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
+
+  it("uses the task type names exposed by the backend", async () => {
+    vi.spyOn(api, "get").mockResolvedValue([
+      {
+        id: "j-document",
+        task_type: "document_generation",
+        status: "succeeded",
+        created_at: "2026-08-24T00:00:00Z",
+      },
+      {
+        id: "j-cleanup",
+        task_type: "deletion_cleanup",
+        status: "queued",
+        created_at: "2026-08-24T00:00:00Z",
+      },
+    ] as never);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+    });
+    render(<QueryClientProvider client={queryClient}><JobsAdminPanel /></QueryClientProvider>);
+
+    expect(await screen.findByText("文书生成", { selector: "strong" })).toBeVisible();
+    expect(screen.getByText("删除清理", { selector: "strong" })).toBeVisible();
+    expect(screen.queryByText("document_generation")).not.toBeInTheDocument();
+    expect(screen.queryByText("deletion_cleanup")).not.toBeInTheDocument();
+  });
 });

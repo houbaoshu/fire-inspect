@@ -18,9 +18,26 @@ export type JobStatus =
   | "cancelled"
   | "superseded";
 
+export type MaterialStepName =
+  | "transcode"
+  | "audio_extract"
+  | "asr"
+  | "keyframes"
+  | "vision"
+  | "fact_extraction";
+
+export type JobTaskType =
+  | MaterialStepName
+  | "knowledge_parse"
+  | "embedding"
+  | "template_recognition"
+  | "document_generation"
+  | "document_render"
+  | "deletion_cleanup";
+
 export interface JobSummary {
   id: string;
-  task_type: string;
+  task_type: JobTaskType;
   status: JobStatus;
   safe_error_message?: string | null;
   attempt_count?: number;
@@ -59,8 +76,7 @@ export interface Inspection {
 }
 
 export interface MaterialStep {
-  name: string;
-  label?: string;
+  name: MaterialStepName;
   status: JobStatus | "not_started";
   job_id?: string;
   safe_error_message?: string | null;
@@ -76,9 +92,9 @@ export interface Material {
   duration_ms?: number;
   revision?: number;
   created_at?: string;
-  steps?: MaterialStep[] | Record<string, MaterialStep | JobStatus>;
-  playback_url?: string;
-  thumbnail_url?: string;
+  steps?: MaterialStep[];
+  playback_url?: string | null;
+  thumbnail_url?: string | null;
 }
 
 export interface TranscriptSegment {

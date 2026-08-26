@@ -102,7 +102,7 @@ describe("MaterialsPanel evidence navigation", () => {
     );
   });
 
-  it("offers video transcoding and audio extraction as independent jobs", async () => {
+  it("shows the six backend material jobs in their canonical order and starts them independently", async () => {
     vi.spyOn(api, "get").mockResolvedValue([
       {
         id: "m-1",
@@ -117,7 +117,17 @@ describe("MaterialsPanel evidence navigation", () => {
     const post = vi.spyOn(api, "post").mockResolvedValue({} as never);
     renderPanel("/inspections/i-1/materials?material=m-1");
 
-    const transcodeRow = (await screen.findByText("兼容播放")).closest(".step-row");
+    expect(await screen.findByText("兼容转码")).toBeVisible();
+    expect(Array.from(document.querySelectorAll(".step-row strong"), (node) => node.textContent)).toEqual([
+      "兼容转码",
+      "音频提取",
+      "语音转写",
+      "关键画面",
+      "视觉描述",
+      "事实提取",
+    ]);
+
+    const transcodeRow = screen.getByText("兼容转码").closest(".step-row");
     const audioExtractRow = screen.getByText("音频提取").closest(".step-row");
     expect(transcodeRow).not.toBeNull();
     expect(audioExtractRow).not.toBeNull();
@@ -150,8 +160,8 @@ describe("MaterialsPanel evidence navigation", () => {
     ] as never);
     renderPanel("/inspections/i-1/materials?material=m-image");
 
-    expect(await screen.findByText("画面描述")).toBeVisible();
-    expect(screen.queryByText("候选事实")).not.toBeInTheDocument();
+    expect(await screen.findByText("视觉描述")).toBeVisible();
+    expect(screen.queryByText("事实提取")).not.toBeInTheDocument();
     expect(screen.queryByText("关键画面")).not.toBeInTheDocument();
     expect(screen.queryByText("语音转写")).not.toBeInTheDocument();
   });
@@ -169,8 +179,8 @@ describe("MaterialsPanel evidence navigation", () => {
     ] as never);
     renderPanel("/inspections/i-1/materials?material=m-text");
 
-    expect(await screen.findByText("候选事实")).toBeVisible();
-    expect(screen.queryByText("画面描述")).not.toBeInTheDocument();
+    expect(await screen.findByText("事实提取")).toBeVisible();
+    expect(screen.queryByText("视觉描述")).not.toBeInTheDocument();
     expect(screen.queryByText("语音转写")).not.toBeInTheDocument();
   });
 
@@ -213,7 +223,7 @@ describe("MaterialsPanel evidence navigation", () => {
     await user.click(screen.getByRole("button", { name: "保存人工转写" }));
 
     await waitFor(() => expect(put).toHaveBeenCalledWith(
-      "/materials/m-1/transcript",
+      "/materials/m-1/transcript/",
       { full_text: "人工补充：现场情况需要继续核实。" },
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     ));
@@ -224,6 +234,42 @@ describe("MaterialsPanel evidence navigation", () => {
       expect(get.mock.calls.filter(([path]) => path === "/inspections/i-1/materials/")).toHaveLength(2);
       expect(get.mock.calls.filter(([path]) => path === "/inspections/i-1/transcripts/")).toHaveLength(2);
     });
+  });
+
+  it("uses backend media URLs and falls back to the protected preview endpoint", async () => {
+    vi.spyOn(api, "get").mockResolvedValue([
+      {
+        id: "m-video",
+        inspection_id: "i-1",
+        kind: "video",
+        display_name: "已转码视频.mp4",
+        revision: 2,
+        playback_url: "/api/v1/materials/m-video/play/?artifact=latest",
+        steps: [],
+      },
+      {
+        id: "m-image",
+        inspection_id: "i-1",
+        kind: "image",
+        display_name: "现场照片.jpg",
+        revision: 1,
+        steps: [],
+      },
+    ] as never);
+
+    const view = renderPanel("/inspections/i-1/materials?material=m-video");
+    await waitFor(() => expect(view.container.querySelector("video")).toBeInTheDocument());
+    expect(view.container.querySelector("video")).toHaveAttribute(
+      "src",
+      "/api/v1/materials/m-video/play/?artifact=latest",
+    );
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /现场照片\.jpg/ }));
+    await waitFor(() => expect(view.container.querySelector("img")).toBeInTheDocument());
+    expect(view.container.querySelector("img")).toHaveAttribute(
+      "src",
+      "/api/v1/materials/m-image/preview/",
+    );
   });
 
   it("keeps the manual transcript draft when a 409 race is returned", async () => {

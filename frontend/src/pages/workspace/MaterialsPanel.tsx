@@ -8,30 +8,25 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState, ErrorState, LoadingState } from "../../components/States";
 import { StatusPill } from "../../components/StatusPill";
 import { formatBytes, formatDateTime, formatDuration } from "../../utils/format";
-import { materialSteps, STEP_LABELS, type WorkspacePanelProps } from "./workspace";
+import { materialStepNames, materialSteps, STEP_LABELS, type WorkspacePanelProps } from "./workspace";
 
 const ALLOWED_EXTENSIONS = [".mp4", ".jpg", ".jpeg", ".png", ".mp3", ".wav"];
 
-function localAssetUrl(candidate: string | undefined, fallback: string): string {
-  if (!candidate) return fallback;
-  try {
-    const url = new URL(candidate, window.location.origin);
-    return url.origin === window.location.origin ? `${url.pathname}${url.search}` : fallback;
-  } catch {
-    return fallback;
+function localAssetUrl(candidate: string | null | undefined, fallback: string): string {
+  for (const value of [candidate, fallback]) {
+    if (!value) continue;
+    try {
+      const url = new URL(value, window.location.origin);
+      if (url.origin === window.location.origin) return `${url.pathname}${url.search}`;
+    } catch {
+      // Try the protected fallback when a serialized URL is malformed.
+    }
   }
+  return "";
 }
 
 function materialKindLabel(kind: string): string {
   return ({ video: "视频", image: "照片", audio: "录音", text: "文字说明" }[kind] ?? "材料");
-}
-
-function stepNamesFor(material: Material): string[] {
-  if (material.kind === "video") return ["transcode", "audio_extract", "asr", "keyframes", "vision", "fact_extraction"];
-  if (material.kind === "audio") return ["asr", "fact_extraction"];
-  if (material.kind === "image") return ["vision"];
-  if (material.kind === "text") return ["fact_extraction"];
-  return [];
 }
 
 export function MaterialsPanel({ inspectionId }: WorkspacePanelProps) {
@@ -133,7 +128,7 @@ export function MaterialsPanel({ inspectionId }: WorkspacePanelProps) {
 
   const manualTranscriptMutation = useMutation({
     mutationFn: ({ materialId, fullText }: { materialId: string; fullText: string }) =>
-      api.put<Transcript>(`/materials/${materialId}/transcript`, {
+      api.put<Transcript>(`/materials/${materialId}/transcript/`, {
         full_text: fullText.trim(),
       }, { idempotencyKey: createIdempotencyKey(`manual-transcript-${materialId}`) }),
     onSuccess: async (_transcript, variables) => {
@@ -262,18 +257,18 @@ export function MaterialsPanel({ inspectionId }: WorkspacePanelProps) {
                   <video ref={videoRef} controls preload="metadata" src={localAssetUrl(selected.playback_url, `${api.baseUrl}/materials/${selected.id}/play/`)}>浏览器不支持视频播放。</video>
                 ) : null}
                 {selected.kind === "audio" ? <audio ref={audioRef} controls preload="metadata" src={localAssetUrl(selected.playback_url, `${api.baseUrl}/materials/${selected.id}/play/`)}>浏览器不支持音频播放。</audio> : null}
-                {selected.kind === "image" ? <img src={localAssetUrl(selected.thumbnail_url, `${api.baseUrl}/materials/${selected.id}/download/`)} alt={selected.display_name} /> : null}
+                {selected.kind === "image" ? <img src={localAssetUrl(selected.thumbnail_url ?? undefined, `${api.baseUrl}/materials/${selected.id}/preview/`)} alt={selected.display_name} /> : null}
                 {selected.kind === "text" ? <div className="text-material-preview">文字说明已安全保存。请在事实页确认其中可作为检查事实的内容。</div> : null}
               </div>
 
               <div className="processing-section">
                 <div className="subsection-heading"><div><h4>独立处理步骤</h4><p>某一步失败不会覆盖其他成功结果。</p></div></div>
                 <div className="step-list">
-                  {stepNamesFor(selected).map((stepName) => {
+                  {materialStepNames(selected.kind).map((stepName) => {
                     const existing = materialSteps(selected).find((step) => step.name === stepName);
                     const status = existing?.status ?? "not_started";
                     return (
-                      <div className="step-row" key={stepName}>
+                      <div className="step-row" data-step-name={stepName} key={stepName}>
                         <div><strong>{STEP_LABELS[stepName] ?? stepName}</strong>{existing?.safe_error_message ? <small className="step-error">{existing.safe_error_message}</small> : null}</div>
                         <StatusPill status={status} />
                         {status === "failed" && existing?.job_id ? (
