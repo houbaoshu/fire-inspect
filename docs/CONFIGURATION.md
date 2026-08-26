@@ -63,11 +63,11 @@ ASR、LLM、Vision、Embedding 分别使用下列同构变量；把 `<CAPABILITY
 
 本地没有内网 AI 网关时，可用 `scripts/dev_ai_gateway.py` 作为开发用翻译网关：它监听 127.0.0.1，把内部协议翻译成 DashScope OpenAI 兼容调用（ASR 走 qwen3-asr 系列，按 `ASR_WINDOW_SEC`/`ASR_OVERLAP_SEC` 分窗转写；视觉、事实抽取走多模态/对话模型；Embedding 走 text-embedding 系列）。启动方式：`set -a; source .env; set +a; uv run --frozen python scripts/dev_ai_gateway.py --port 8787`，然后把四类能力的 `ENDPOINT` 指向 `http://127.0.0.1:8787/`、`MODEL` 指向对应阿里模型。该网关只是验收工具，不是部署组件；注意它会将材料音频和关键帧发送到所配置的外部模型服务。
 
-### Windows Word/WPS
+### 指定环境的 Word/WPS（环境变量沿用 windows-docx 名称）
 
 1. 在非敏感输出目录运行 `uv run python scripts/generate_docx_acceptance_fixtures.py --output-dir <目录>`。
-2. 把四份 DOCX 和 `manifest.generated.json` 送到单位指定的 Windows、Word/WPS 和授权字体环境；更新全部域，以 100% 缩放逐页检查，并把每一页从该环境导出为 PNG 保存到输出目录的 `rendered/` 子目录。
-3. 复制 [windows-docx-approval.example.json](windows-docx-approval.example.json)，确认 `os` 为 Windows，并填写 Word/WPS 精确版本、字体、复核人、DOCX SHA-256、逐页 PNG 路径及 SHA-256；询问笔录每页还要记录实际显示的当前页和总页数。按示例的 `页码:PNG哈希\n` 顺序计算 `visual_baseline_sha256`，首次审批的逐页图像即为后续确定性样本的视觉基线。
+2. 把四份 DOCX 和 `manifest.generated.json` 送到单位指定的 Word/WPS 和字体环境（2026-08-26 确认为本机 macOS + Microsoft Word 16.112.1，字体为 FZXiaoBiaoSong-B05S、Songti SC、STFangsong、STKaiti；也可使用 Windows + Word/WPS + 六个 Windows 字体族）；更新全部域，以 100% 缩放逐页检查，并把每一页从该环境导出为 PNG 保存到输出目录的 `rendered/` 子目录。
+3. 复制 [windows-docx-approval.example.json](windows-docx-approval.example.json)，将 `os` 填为 `Windows` 或 `macOS`，并填写 Word/WPS 精确版本、字体、复核人、DOCX SHA-256、逐页 PNG 路径及 SHA-256；询问笔录每页还要记录实际显示的当前页和总页数。按示例的 `页码:PNG哈希\n` 顺序计算 `visual_baseline_sha256`，首次审批的逐页图像即为后续确定性样本的视觉基线。
 4. 设置 `FIRE_INSPECT_WINDOWS_DOCX_APPROVED=1`、`FIRE_INSPECT_WINDOWS_DOCX_OUTPUT_DIR=<目录>`、`FIRE_INSPECT_WINDOWS_DOCX_APPROVAL_FILE=<审批 JSON>`，运行 `make windows-docx`。测试会重新生成确定性样本，逐页解码并校验 PNG、页脚值和视觉基线哈希，拒绝与本次 DOCX 不绑定的旧审批。
 
 ### PostgreSQL 与恢复

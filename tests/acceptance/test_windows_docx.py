@@ -12,13 +12,26 @@ from scripts.generate_docx_acceptance_fixtures import generate_review_set
 from fire_inspect.acceptance import file_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
-REQUIRED_FONTS = {
+WINDOWS_REQUIRED_FONTS = {
     "FangSong",
     "FZXiaoBiaoSong-B05S",
     "KaiTi",
     "Microsoft YaHei",
     "Microsoft YaHei UI",
     "SimSun",
+}
+# 2026-08-26 确认：指定验收环境为本机 macOS + Microsoft Word。
+# 模板字体在该环境的可用等价族：方正小标宋精确匹配，宋体/仿宋/楷体
+# 由 Songti SC/STFangsong/STKaiti 承担，微软雅黑缺省时由 Word 替换。
+MACOS_REQUIRED_FONTS = {
+    "FZXiaoBiaoSong-B05S",
+    "STFangsong",
+    "STKaiti",
+    "Songti SC",
+}
+REQUIRED_FONTS_BY_OS = {
+    "Windows": WINDOWS_REQUIRED_FONTS,
+    "macOS": MACOS_REQUIRED_FONTS,
 }
 
 
@@ -47,16 +60,17 @@ def test_designated_windows_word_or_wps_review_approves_every_generated_page() -
     generated_hashes = generate_review_set(output_dir)
 
     assert approval_path.is_file(), (
-        "先在指定 Windows + Word/WPS + 字体环境打开输出目录中的四份 DOCX，"
+        "先在指定的 Word/WPS + 字体环境打开输出目录中的四份 DOCX，"
         "更新全部域并逐页检查，再提供审批 JSON"
     )
     approval = json.loads(approval_path.read_text(encoding="utf-8"))
     assert approval.get("schema_version") == 2
     environment = approval.get("environment", {})
-    assert environment.get("os") == "Windows"
+    review_os = environment.get("os")
+    assert review_os in REQUIRED_FONTS_BY_OS
     assert environment.get("application") in {"Microsoft Word", "WPS Writer"}
     assert str(environment.get("version", "")).strip()
-    assert REQUIRED_FONTS.issubset(set(environment.get("fonts", [])))
+    assert REQUIRED_FONTS_BY_OS[review_os].issubset(set(environment.get("fonts", [])))
     assert str(environment.get("render_export_method", "")).strip()
     assert approval.get("fields_updated") is True
     assert approval.get("all_pages_checked_at_100_percent") is True

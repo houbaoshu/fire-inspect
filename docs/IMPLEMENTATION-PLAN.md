@@ -42,7 +42,7 @@
 - 所有签名区保持空白，供线下手签。
 - 检查记录编号作为一个完整文本字段，不解析字号结构。
 - 检查日期格式为 `YYYY年M月D日`；询问起止时间都输出完整日期时间，跨日时两端均带日期。
-- Word 视觉验收以单位指定的 Windows + WPS/Word 和指定字体环境为准；首次人工确认通过的确定性生成样本成为后续视觉基线。
+- Word 视觉验收以单位指定的 Word/WPS 和字体环境为准（2026-08-26 确认为本机 macOS + Microsoft Word）；首次人工确认通过的确定性生成样本成为后续视觉基线。
 - `1.mp4` 按正向横屏显示，忽略异常 90° 旋转矩阵。允许生成浏览器兼容播放副本，但原件和原时间轴保持不变。
 - 视频证据跳转允许目标时间前后约 3 秒误差；每个视频至少提供一张清晰关键画面，业务可用性由人工最终判断。
 - `1.mp4` 和 `4.mp4` 放在同一次检查内执行跨材料证据定位验收。
@@ -81,7 +81,7 @@
 | Word | `python-docx` + `lxml` | 前者处理常规结构，后者精确修改 OOXML、域、关系和格式 |
 | PDF/DOCX 解析 | `pdfplumber`、`pypdf`、Poppler、`python-docx` | 避免把文本抽取误当视觉检查；支持双栏定位和逐页来源 |
 | HTTP/Schema | `httpx` + Pydantic/JSON Schema | AI 调用、超时控制和结构化输出校验 |
-| 文书渲染 | LibreOffice headless + Poppler | 服务端结构与版式预检；不替代 Windows 最终验收 |
+| 文书渲染 | LibreOffice headless + Poppler | 服务端结构与版式预检；不替代指定环境的最终验收 |
 | 测试 | pytest、pytest-django、Vitest、React Testing Library、Playwright | 覆盖领域、API、前端和端到端 |
 | 依赖锁定 | `uv.lock` + `pnpm-lock.yaml` | 可重复、可离线构建 |
 | 部署 | Linux LTS 主机 + Docker Engine/Compose | 预构建镜像离线导入，数据挂载到主机受控目录 |
@@ -725,7 +725,7 @@ confirmed --相关输入有效变化--> draft
 
 1. OOXML 结构：包、关系、纸型、页边距、表格、run 格式、图片、字段代码和签名留白。
 2. 服务端渲染：在安装所需字体的隔离环境中用 LibreOffice 转 PDF、Poppler 转逐页 PNG，检查页数、空白页、越界、图片和页脚。
-3. 发布门槛：在单位指定 Windows + WPS/Word 和字体环境中实际打开、更新域、保存并逐页人工检查。
+3. 发布门槛：在单位指定的 Word/WPS 和字体环境中实际打开、更新域、保存并逐页人工检查。
 
 当前非 Windows 环境如果缺少中文字体，渲染必须明确失败，不能把标点和表格可见误报为视觉通过。
 
@@ -891,7 +891,7 @@ MVP 不部署独立 ELK 或 Prometheus 集群，提供：
 1. `fast`：后端单元、API/数据库集成、安全、固定 AI、前端单元和 OOXML 结构；每次提交运行。
 2. `local-acceptance`：使用本地真实视频和法规 PDF，AI 可以固定响应；素材缺失时报告“未运行”，不得算通过。
 3. `real-ai`：显式授权后读取进程环境变量，运行真实 ASR、LLM、视觉和 Embedding。
-4. `windows-docx`：单位指定 Windows + WPS/Word + 指定字体环境的发布视觉门槛。
+4. `windows-docx`：单位指定的 Word/WPS + 字体环境的发布视觉门槛（名称为历史沿用）。
 
 一键测试输出 JUnit、验收覆盖报告和脱敏工件清单。真实视频和关键帧不进入普通 CI 工件或仓库。
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from io import BytesIO
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 from lxml import etree
 
@@ -13,6 +13,28 @@ W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 PR_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 NS = {"w": W_NS, "r": R_NS, "pr": PR_NS}
+
+
+# Fixed DOS timestamp: generated DOCX bytes must be reproducible across runs so
+# the reviewed fixture hashes can be verified by regenerating at acceptance time.
+FIXED_ENTRY_TIMESTAMP = (2026, 1, 1, 0, 0, 0)
+
+
+def normalize_package_timestamps(payload: bytes) -> bytes:
+    """Repack a DOCX with fixed zip entry timestamps, keeping content identical."""
+
+    with ZipFile(BytesIO(payload)) as source:
+        entries = [(info, source.read(info.filename)) for info in source.infolist()]
+    output = BytesIO()
+    with ZipFile(output, "w", ZIP_DEFLATED) as target:
+        for info, content in entries:
+            normalized = ZipInfo(info.filename, date_time=FIXED_ENTRY_TIMESTAMP)
+            normalized.compress_type = info.compress_type
+            normalized.external_attr = info.external_attr
+            normalized.internal_attr = info.internal_attr
+            normalized.create_system = info.create_system
+            target.writestr(normalized, content)
+    return output.getvalue()
 
 
 def rewrite_package_parts(payload: bytes, replacements: dict[str, bytes]) -> bytes:

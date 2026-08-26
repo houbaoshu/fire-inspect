@@ -87,6 +87,21 @@ def test_record_document_fills_correct_cells_and_exactly_one_checkbox(
     assert_document_structure(result, expected_type="record")
 
 
+def test_generated_documents_are_byte_deterministic(template_dir: Path) -> None:
+    """Visual acceptance regenerates fixtures at review time, so bytes must not vary."""
+
+    from fire_inspect.documents.package import FIXED_ENTRY_TIMESTAMP
+
+    template = template_dir / "监督检查记录表.docx"
+    first = generate_record_docx(template, _record_data(InspectionType.CONSTRUCTION_SITE))
+    second = generate_record_docx(template, _record_data(InspectionType.CONSTRUCTION_SITE))
+    assert first == second
+    with ZipFile(BytesIO(first)) as archive:
+        assert all(
+            info.date_time == FIXED_ENTRY_TIMESTAMP for info in archive.infolist()
+        )
+
+
 def test_record_long_content_can_grow_without_exact_height_clipping(template_dir: Path) -> None:
     data = _record_data(InspectionType.OTHER)
     data = RecordDocumentData(

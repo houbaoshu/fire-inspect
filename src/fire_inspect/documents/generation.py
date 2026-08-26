@@ -24,7 +24,11 @@ from .inputs import (
     PhotoItem,
     RecordDocumentData,
 )
-from .package import finalize_interview_page_count, strip_external_attached_template
+from .package import (
+    finalize_interview_page_count,
+    normalize_package_timestamps,
+    strip_external_attached_template,
+)
 
 W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml"
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
@@ -141,7 +145,9 @@ def _select_exactly_one_checkbox(cell, selected_label: str) -> None:
 def _save_document(document: Document) -> bytes:
     stream = BytesIO()
     document.save(stream)
-    payload = strip_external_attached_template(stream.getvalue())
+    payload = normalize_package_timestamps(
+        strip_external_attached_template(stream.getvalue())
+    )
     validate_docx(payload, filename="generated.docx")
     return payload
 
